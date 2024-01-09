@@ -1,3 +1,51 @@
 {
-	"type": "module"
+	"name": "@adraffy/cid",
+	"version": "0.0.1",
+	"description": "Multiformat CID",
+	"keywords": [
+		"CID",
+		"Multiformat",
+		"Multihash",
+		"uvarint"
+	],
+	"exports": {
+		"types": "./dist/index.d.ts",
+		"import": "./dist/index.mjs",
+		"default": "./dist/index.cjs"
+	},
+	"types": "./dist/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"*": [
+				"./dist/index.d.ts"
+			]
+		}
+	},
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
+	"files": [
+		"./dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/adraffy/cid.js.git"
+	},
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/adraffy/cid.js/issues"
+	},
+	"homepage": "https://github.com/adraffy/cid.js#readme",
+	"author": {
+		"name": "raffy.eth",
+		"email": "raffy@me.com",
+		"url": "http://raffy.antistupid.com"
+	},
+	"type": "module",
+	"scripts": {
+		"build": "rollup -c"
+	},
+	"devDependencies": {
+		"@rollup/plugin-terser": "^0.4.4",
+		"rollup": "^4.9.4"
+	}
 }

@@ -1,8 +1,12 @@
 # cid.js
-0-dependancy [Multiformat CID](https://github.com/multiformats/cid/blob/master/README.md)
+0-dependancy [Multiformat CID](https://github.com/multiformats/cid/blob/master/README.md) that works in the browser.
+
+* [`6KB`](./dist/index.min.js) **Default** — full library
 
 ```js
 import {CID} from '@adraffy/cid.js';
+// npm i @adraffy/cid
+// browser: https://cdn.jsdelivr.net/npm/@adraffy/cid@latest/dist/index.min.js
 
 let cid = CID.from('QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5');
 // CIDv0 {

@@ -1,9 +1,6 @@
 import * as uvarint from './uvarint.js';
 import * as multibase from './multibase.js';
-import {Multihash} from './multihash.js';
-
-// https://github.com/multiformats/cid/blob/master/original-rfc.md
-// https://github.com/multiformats/cid#cidv1
+import {Multihash} from './Multihash.js';
 
 export class CID {	
 	static from(v) {
