@@ -42,6 +42,7 @@
 	},
 	"type": "module",
 	"scripts": {
+		"test": "node test/RFC4648.js && node test/Multibase.js",
 		"build": "rollup -c"
 	},
 	"devDependencies": {

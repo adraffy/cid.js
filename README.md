@@ -4,7 +4,7 @@
 * [`6KB`](./dist/index.min.js) **Default** — full library
 
 ```js
-import {CID} from '@adraffy/cid.js';
+import {CID} from '@adraffy/cid.js'; // or require()
 // npm i @adraffy/cid
 // browser: https://cdn.jsdelivr.net/npm/@adraffy/cid@latest/dist/index.min.js
 
@@ -12,30 +12,32 @@ let cid = CID.from('QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5');
 // CIDv0 {
 //   hash: Multihash {
 //     code: 18,
-//     hash: Uint8Array(32) [
-//        26,  69, 225,  30, 148,  96, 248, 173,
-//       218, 145, 158, 237, 230, 136, 179, 207,
-//       161, 198,  77, 214,  36,  58, 171, 204,
-//       194, 247,  64, 172,  47,  24,  44, 164
-//     ]
+//     hash: Uint8Array(32) [ ... ]
 //   }
 // }
-console.log(cid.toString()); 
+cid.version; // uvarint: 0 or 1
+cid.codec;   // uvarint: 112
+cid.bytes;   // encoded bytes
+cid.length;  // length of encoded bytes
+cid.toString(); 
 // "QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5"
-console.log(cid.upgrade().toString());
-// "bafybeia2ixqr5fda7cw5vem65xtirm6puhde3vrehkv4zqxxicwc6gbmuq"
 
-let cid = CID.from('bafybeifigsoqndhucwnlmtqoeyjozdhru734eww46dtzljarlab5p3ma4i');
+let cid1 = cid.upgrade(); // noop if CIDv1
 // CIDv1 {
 //   codec: 112,
 //   hash: Multihash {
 //     code: 18,
-//     hash: Uint8Array(32) [
-//       168,  52, 157,  6, 140, 244,  21, 154,
-//       182,  78,  14, 38,  18, 236, 140, 241,
-//       167, 247, 194, 90, 220, 240, 231, 149,
-//       164,  17,  88,  3, 215, 237, 128, 226
-//     ]
+//     hash: Uint8Array(32) [ ... ]
 //   }
 // }
+cid1.toString(); // default base is "b" => base32
+// "bafybeia2ixqr5fda7cw5vem65xtirm6puhde3vrehkv4zqxxicwc6gbmuq"
+cid1.toString('k'); // base "k" => base36
+// "k2jmtxs0omsxbtzexbx41py6k7akdtllisuuumrorlmyo2tixbx59rj8"
 ```
+
+### Build
+
+* `git clone` this repo, then `npm install` 
+* `npm run test`
+* `npm run build` — create [/dist/](./dist/)

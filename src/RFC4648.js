@@ -3,11 +3,11 @@ import {CharTable} from './CharTable.js';
 const PAD = '=';
 
 export class RFC4648 {
-	constructor(chars) {
-		this.bits = Math.log2(chars.length);
-		if (!Number.isInteger(this.bits)) throw new TypeError();
-		this.table = new CharTable(chars);
-		this.table.chars += PAD; // haxor
+	constructor(s) { // must be power of 2
+		this.table = new CharTable(s);
+		this.bits = Math.log2(this.table.length);
+		if (this.table.length < 2 || !Number.isInteger(this.bits)) throw new TypeError();
+		this.table.chars.push(PAD); // haxor
 	}
 	decode(s) {
 		let {table, bits} = this;

@@ -59,11 +59,14 @@ var uvarint = /*#__PURE__*/Object.freeze({
 	write: write
 });
 
+// simple "abc" <-> 012 mapper
+// parse("a") => 0
+// format([0,1,2]) => "abc"
+
 class CharTable {
 	constructor(s) {
-		if (typeof s !== 'string') throw new TypeError();
 		let v = [...s];
-		if (v.length !== s.length) throw new TypeError();
+		if (v.length !== s.length) throw new TypeError('expected chars');
 		this.chars = s;
 		this.map = new Map(v.map((x, i) => [x, i]));
 	}
@@ -173,112 +176,31 @@ class Prefix0 {
 	}
 }
 
-const ALPHA = 'abcdefghijklmnopqrstuvwxyz';
-const RADIX = '0123456789' + ALPHA;
+const BASES = new Map();
 
-// https://www.rfc-editor.org/rfc/rfc4648.html#section-4 
-const Base64 = new RFC4648(ALPHA.toUpperCase() + ALPHA + RADIX.slice(0, 10) + '+/');
-// https://www.rfc-editor.org/rfc/rfc4648.html#section-5
-const Base64URL = new RFC4648(ALPHA.toUpperCase() + ALPHA + RADIX.slice(0, 10) + '-_');
-// https://tools.ietf.org/id/draft-msporny-base58-03.html 
-const Base58BTC = new Prefix0('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
-// https://github.com/multiformats/multibase/blob/master/rfcs/Base36.md
-const Base36 = new Prefix0(RADIX);
-// https://www.rfc-editor.org/rfc/rfc4648.html#section-7
-const Base32Hex = new RFC4648(RADIX.slice(0, 32));
-// https://www.rfc-editor.org/rfc/rfc4648.html#section-6
-const Base32 = new RFC4648('abcdefghijklmnopqrstuvwxyz234567');
-// https://www.rfc-editor.org/rfc/rfc4648.html#section-8
-const Base16 = new RFC4648(RADIX.slice(0, 16));
-// https://github.com/multiformats/multibase/blob/master/rfcs/Base10.md
-const Base10 = new Prefix0(RADIX.slice(0, 10)); 
-// https://github.com/multiformats/multibase/blob/master/rfcs/Base8.md
-const Base8 = new RFC4648(RADIX.slice(0, 8));
-// https://github.com/multiformats/multibase/blob/master/rfcs/Base2.md
-const Base2 = new RFC4648(RADIX.slice(0, 2));
-
-function bind(base, ...a) {
-	return {
-		decode: s => base.decode(s, ...a),
-		encode: v => base.encode(v, ...a)
-	};
-}
-
-const MULTIBASES = {};
-function register(prefix, {encode, decode}, args = {}) {
-	MULTIBASES[prefix] = {prefix, encode, decode, ...args};
-}
-
-// https://github.com/multiformats/multibase#multibase-table  
-
-register('0', bind(Base2), {name: 'base2'});
-register('7', bind(Base8), {name: 'base8'});
-register('9', bind(Base10), {name: 'base10'});
-register('f', bind(Base16), {case: false, name: 'base16'});
-register('F', bind(Base16), {case: true, name: 'base16upper'});
-register('v', bind(Base32Hex), {case: false, name: 'base32hex'});
-register('V', bind(Base32Hex), {case: true, name: 'base32hexupper'});
-register('t', bind(Base32Hex, true), {case: false, name: 'base32hexpad'});
-register('T', bind(Base32Hex, true), {case: true, name: 'base32hexpadupper'});
-register('b', bind(Base32), {case: false, name: 'base32'});
-register('B', bind(Base32), {case: true, name: 'base32upper'});
-register('c', bind(Base32, true), {case: false, name: 'base32pad'});
-register('C', bind(Base32, true), {case: true, name: 'base32padupper'});
-// h
-register('k', bind(Base36), {case: false,name: 'base36'});
-register('K', bind(Base36), {case: true, name: 'base36upper'});
-register('z', bind(Base58BTC), {name: 'base58btc'});
-// ZBase58BTC
-register('m', bind(Base64), {name: 'base64'});
-register('M', bind(Base64, true), {name: 'base64pad'});
-register('u', bind(Base64URL), {name: 'base64url'});
-register('U', bind(Base64URL, true), {name: 'base64urlpad'});
-// p
-register('1', bind(Base58BTC), {name: 'base58btc-Identity'});
-register('Q', bind(Base58BTC), {name: 'base58btc-CIDv0'});
-
-function decode(s, prefix) {
-	if (typeof s !== 'string') throw new TypeError('expected string');
-	if (!prefix) { 
-		prefix = s[0];
-		s = s.slice(1);
+class Multibase {
+	static decode(s) {
+		return this.for(s[0]).decode(s.slice(1));
 	}
-	let mb = MULTIBASES[prefix];
-	if (!mb) throw new Error(`unknown multibase: ${prefix}`);	
-	if (mb.casing !== undefined) s = s.toLowerCase();
-	return mb.decode(s);
+	static for(prefix) {
+		let mb = BASES.get(prefix);
+		if (!mb) throw new Error(`unknown multibase: ${prefix}`);
+		return mb;
+	}
+	constructor(prefix, name) {
+		if (typeof prefix !== 'string' || prefix.length !== 1) throw new TypeError('invalid prefix');
+		this.prefix = prefix;
+		this.name = name;
+		BASES.set(prefix, this);
+	}
+	encodeWithPrefix(v) {
+		return this.prefix + this.encode(v);
+	}
 }
-
-function encode(prefix, v, prefixed = true) {
-	let mb = MULTIBASES[prefix];
-	if (!mb) throw new Error(`unknown multibase: ${prefix}`);
-	let s = mb.encode(v);
-	if (mb.casing) s = s.toUpperCase();
-	if (prefixed) s = mb.prefix + s; 
-	return s;
-}
-
-var multibase = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	Base10: Base10,
-	Base16: Base16,
-	Base2: Base2,
-	Base32: Base32,
-	Base32Hex: Base32Hex,
-	Base36: Base36,
-	Base58BTC: Base58BTC,
-	Base64: Base64,
-	Base64URL: Base64URL,
-	Base8: Base8,
-	MULTIBASES: MULTIBASES,
-	decode: decode,
-	encode: encode,
-	register: register
-});
 
 class Multihash {
 	static from(v) {
-		if (typeof v === 'string') v = decode(v);
+		if (typeof v === 'string') v = Multibase.decode(v);
 		let [code, pos] = read(v);
 		let size;
 		[size, pos] = read(v, pos);
@@ -305,18 +227,97 @@ class Multihash {
 	}
 }
 
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-4 
+const Base64 = new RFC4648('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-5
+const Base64URL = new RFC4648('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_');
+
+// https://tools.ietf.org/id/draft-msporny-base58-03.html 
+const Base58BTC = new Prefix0('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base36.md
+const Base36 = new Prefix0('0123456789abcdefghijklmnopqrstuvwxyz');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-7
+const Base32Hex = new RFC4648('0123456789abcdefghijklmnopqrstuv');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-6
+const Base32 = new RFC4648('abcdefghijklmnopqrstuvwxyz234567');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-8
+const Base16 = new RFC4648('0123456789abcdef');
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base10.md
+const Base10 = new Prefix0('0123456789'); 
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base8.md
+const Base8 = new RFC4648('01234567');
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base2.md
+const Base2 = new RFC4648('01');
+
+class MultibaseWrapper extends Multibase {
+	constructor(prefix, name, base, {casing, padding} = {}) {
+		super(prefix, name);
+		this.base = base;
+		this.casing = casing;
+		this.padding = padding;
+	}
+	decode(s) {
+		if (this.casing !== undefined) s = s.toLowerCase(); // if any casing, make it lower
+		return this.base.decode(s);
+	}
+	encode(v) {
+		let s = this.base.encode(v, this.padding);
+		if (this.casing) s = s.toUpperCase(); // if upper casing, make it upper
+		return s;
+	}
+}
+
+// https://github.com/multiformats/multibase#multibase-table  
+new MultibaseWrapper('0', 'base2', Base2);
+new MultibaseWrapper('7', 'base8', Base8);
+new MultibaseWrapper('9', 'base10', Base10);
+new MultibaseWrapper('f', 'base16', Base16, {casing: false});
+new MultibaseWrapper('F', 'base16upper', Base16, {casing: true});
+new MultibaseWrapper('v', 'base32hex', Base32Hex, {casing: false});
+new MultibaseWrapper('V', 'base32hexupper', Base32Hex, {casing: true});
+new MultibaseWrapper('t', 'base32hexpad', Base32Hex, {casing: false, padding: true});
+new MultibaseWrapper('T', 'base32hexpadupper', Base32Hex, {casing: true, padding: true});
+new MultibaseWrapper('b', 'base32', Base32, {casing: false});
+new MultibaseWrapper('B', 'base32upper', Base32, {casing: true});
+new MultibaseWrapper('c', 'base32pad', Base32, {casing: false, padding: true});
+new MultibaseWrapper('C', 'base32padupper', Base32, {casing: true, padding: true});
+// h
+new MultibaseWrapper('k', 'base36', Base36, {casing: false});
+new MultibaseWrapper('K', 'base36upper', Base36, {case: true});
+new MultibaseWrapper('z', 'base58btc', Base58BTC);
+// ZBase58BTC
+new MultibaseWrapper('m', 'base64', Base64);
+new MultibaseWrapper('M', 'base64pad', Base64, {padding: true});
+new MultibaseWrapper('u', 'base64url', Base64URL);
+new MultibaseWrapper('U', 'base64urlpad', Base64URL, {padding: true});
+// p
+new MultibaseWrapper('1', 'base58btc-Identity', Base58BTC);
+new MultibaseWrapper('Q', 'base58btc-CIDv0', Base58BTC);
+
+const Q = Multibase.for('Q');
+const SHA2_256 = 0x12;
+
 class CID {	
 	static from(v) {
 		if (typeof v === 'string') {
-			if (v.length == 46 && v.startsWith('Qm')) {
-				v = Base58BTC.decode(v);
-			} else {
-				v = decode(v);
-				if (v[0] == 0x12) throw new Error('CIDv0 cannot be multibase');
+			if (v.length == 46 && v.startsWith('Qm')) { // CIDv0
+				v = Q.decode(v);
+			} else { // CIDv1
+				v = Multibase.decode(v);
+				if (v[0] == SHA2_256) throw new Error('CIDv0 cannot be multibase');
 			}
 		}
 		try {
-			if (v.length == 34 && v[0] == 0x12 && v[1] == 0x20) {
+			if (v[0] == SHA2_256) {
+				if (v[1] !== 32) throw new Error('CIDv0 must be SHA2-256');
 				return new CIDv0(Multihash.from(v));
 			}
 			let [version, pos] = read(v);
@@ -329,10 +330,10 @@ class CID {
 				default: throw new Error(`unsupported version: ${version}`);
 			}
 		} catch (err) {
-			console.log(err);
 			throw new Error(`Malformed CID: ${err.message}`);
 		}
 	}
+	//get isCID() { return true; }
 	upgrade() { return this; }
 	toJSON() {
 		let {version, codec, hash} = this;
@@ -350,9 +351,7 @@ class CIDv0 extends CID {
 	get length() { return this.hash.bytes.length; }
 	get bytes() { return this.hash.bytes; }
 	upgrade() { return new CIDv1(this.codec, this.hash); }
-	toString() {
-		return encode('Q', this.bytes, false);
-	}
+	toString() { return Q.encode(this.bytes); }
 }
 
 class CIDv1 extends CID {
@@ -369,21 +368,35 @@ class CIDv1 extends CID {
 		return v;
 	}
 	toString(base) {
-		if (!base) {
+		if (!base) { // derive key from codec
 			switch (this.codec) {
 				case 0x72: base = 'k'; break; // libp2p-key
 				default: base = 'b';
 			}
 		}
-		return encode(base, this.bytes, true);
+		if (!(base instanceof Multibase)) {
+			base = Multibase.for(base);
+		}
+		return base.encodeWithPrefix(this.bytes);
 	}
 }
 
+exports.Base10 = Base10;
+exports.Base16 = Base16;
+exports.Base2 = Base2;
+exports.Base32 = Base32;
+exports.Base32Hex = Base32Hex;
+exports.Base36 = Base36;
+exports.Base58BTC = Base58BTC;
+exports.Base64 = Base64;
+exports.Base64URL = Base64URL;
+exports.Base8 = Base8;
 exports.CID = CID;
 exports.CIDv0 = CIDv0;
 exports.CIDv1 = CIDv1;
+exports.Multibase = Multibase;
+exports.MultibaseWrapper = MultibaseWrapper;
 exports.Multihash = Multihash;
 exports.Prefix0 = Prefix0;
 exports.RFC4648 = RFC4648;
-exports.multibase = multibase;
 exports.uvarint = uvarint;

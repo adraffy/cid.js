@@ -1,0 +1,88 @@
+import {Prefix0} from './Prefix0.js';
+import {RFC4648} from './RFC4648.js';
+import {Multibase} from './Multibase.js';
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-4 
+export const Base64 = new RFC4648('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-5
+export const Base64URL = new RFC4648('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_');
+
+// https://tools.ietf.org/id/draft-msporny-base58-03.html 
+export const Base58BTC = new Prefix0('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
+
+// https://www.flickr.com/groups/api/discuss/72157616713786392/
+export const Base58Flickr = new Prefix0('123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ');
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base36.md
+export const Base36 = new Prefix0('0123456789abcdefghijklmnopqrstuvwxyz');
+
+// https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt
+export const Base32Z = new RFC4648('ybndrfg8ejkmcpqxot1uwisza345h769');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-7
+export const Base32Hex = new RFC4648('0123456789abcdefghijklmnopqrstuv');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-6
+export const Base32 = new RFC4648('abcdefghijklmnopqrstuvwxyz234567');
+
+// https://www.rfc-editor.org/rfc/rfc4648.html#section-8
+export const Base16 = new RFC4648('0123456789abcdef');
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base10.md
+export const Base10 = new Prefix0('0123456789'); 
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base8.md
+export const Base8 = new RFC4648('01234567');
+
+// https://github.com/multiformats/multibase/blob/master/rfcs/Base2.md
+export const Base2 = new RFC4648('01');
+
+// helper class to wrap a Multibase
+export class MultibaseWrapper extends Multibase {
+	constructor(prefix, name, coder, {casing, padding} = {}) {
+		super(prefix, name);
+		this.coder = coder;
+		this.casing = casing;
+		this.padding = padding;
+	}
+	decode(s) {
+		if (this.casing !== undefined) s = s.toLowerCase(); // if any casing, make it lower
+		return this.coder.decode(s);
+	}
+	encode(v) {
+		let s = this.coder.encode(v, this.padding);
+		if (this.casing) s = s.toUpperCase(); // if upper casing, make it upper
+		return s;
+	}
+}
+
+// https://github.com/multiformats/multibase#multibase-table
+new MultibaseWrapper('0', 'base2', Base2);
+new MultibaseWrapper('7', 'base8', Base8);
+new MultibaseWrapper('9', 'base10', Base10);
+new MultibaseWrapper('f', 'base16', Base16, {casing: false});
+new MultibaseWrapper('F', 'base16upper', Base16, {casing: true});
+new MultibaseWrapper('v', 'base32hex', Base32Hex, {casing: false});
+new MultibaseWrapper('V', 'base32hexupper', Base32Hex, {casing: true});
+new MultibaseWrapper('t', 'base32hexpad', Base32Hex, {casing: false, padding: true});
+new MultibaseWrapper('T', 'base32hexpadupper', Base32Hex, {casing: true, padding: true});
+new MultibaseWrapper('b', 'base32', Base32, {casing: false});
+new MultibaseWrapper('B', 'base32upper', Base32, {casing: true});
+new MultibaseWrapper('c', 'base32pad', Base32, {casing: false, padding: true});
+new MultibaseWrapper('C', 'base32padupper', Base32, {casing: true, padding: true});
+new MultibaseWrapper('h', 'base32z', Base32Z);
+new MultibaseWrapper('k', 'base36', Base36, {casing: false});
+new MultibaseWrapper('K', 'base36upper', Base36, {casing: true});
+new MultibaseWrapper('z', 'base58btc', Base58BTC);
+new MultibaseWrapper('Z', 'base58flickr', Base58Flickr);
+new MultibaseWrapper('m', 'base64', Base64);
+new MultibaseWrapper('M', 'base64pad', Base64, {padding: true});
+new MultibaseWrapper('u', 'base64url', Base64URL);
+new MultibaseWrapper('U', 'base64urlpad', Base64URL, {padding: true});
+// U+0070,     p,          proquint,           Proquint (https://arxiv.org/html/0901.4016)
+// U+1F680,    🚀,         base256emoji,       base256 with custom alphabet using variable-sized-codepoints
+
+// what the fuck does this mean?
+// "NOTE: Multibase-prefixes are encoding agnostic. "z" is "z", not 0x7a ("z" encoded as ASCII/UTF-8).
+//  In UTF-32, for example, that same "z" would be [0x7a, 0x00, 0x00, 0x00] not [0x7a]."

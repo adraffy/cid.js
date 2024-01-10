@@ -8,7 +8,7 @@ export const MAX = (() => {
 	return max;
 })();
 
-export function assert(u) {	
+function assert(u) {	
 	if (!Number.isSafeInteger(u) || u < 0) {
 		throw new TypeError(`invalid uvarint: ${u}`);
 	}

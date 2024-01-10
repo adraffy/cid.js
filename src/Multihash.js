@@ -1,9 +1,9 @@
 import {sizeof, read, write} from './uvarint.js';
-import {decode} from './multibase.js';
+import {Multibase} from './Multibase.js';
 
 export class Multihash {
 	static from(v) {
-		if (typeof v === 'string') v = decode(v);
+		if (typeof v === 'string') v = Multibase.decode(v);
 		let [code, pos] = read(v);
 		let size;
 		[size, pos] = read(v, pos);
@@ -24,8 +24,5 @@ export class Multihash {
 	write(v, pos) {
 		v.set(this.hash, write(v, this.hash.length, write(v, this.code, pos)));
 		return pos;
-	}
-	toJSON() {
-		return {...this};
 	}
 }

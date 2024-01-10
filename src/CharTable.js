@@ -1,10 +1,11 @@
+// simple "abc" <-> 012 mapper
+// parse("a") => 0
+// format([0,1,2]) => "abc"
+
 export class CharTable {
 	constructor(s) {
-		if (typeof s !== 'string') throw new TypeError();
-		let v = [...s];
-		if (v.length !== s.length) throw new TypeError();
-		this.chars = s;
-		this.map = new Map(v.map((x, i) => [x, i]));
+		this.chars = [...s];
+		this.map = new Map(this.chars.map((x, i) => [x, i]));
 	}
 	get length() {
 		return this.map.size;

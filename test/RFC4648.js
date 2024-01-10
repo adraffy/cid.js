@@ -1,15 +1,24 @@
-import {multibase} from '../src/index.js';
+import {Multibase} from '../src/index.js';
+import {rng, random_bytes} from './utils.js';
 
-function rng(n) {
-	return (Math.random() * n)|0;
+function check_buffer(mb, encoding) {
+	for (let i = 0; i < 1000; i++) {
+		let v0 = random_bytes(rng(1024));
+		let enc0 = Buffer.from(v0).toString(encoding);
+		let enc1 = mb.encode(v0);
+		if (enc0 !== enc1) {
+			console.log({encoding, v0, enc0, enc1});
+			throw 'encode';
+		}
+		let v1 = mb.decode(enc0);
+		if (Buffer.compare(v0, v1)) {
+			console.log({encoding, v0, v1});
+			throw 'decode';
+		}
+	}
+	console.log(`PASS buffer/${encoding}`);
 }
 
-for (let i = 0; i < 1000; i++) {
-	let v0 = Uint8Array.from({length: rng(256)}, () => rng(256));
-	let enc0 = Buffer.from(v0).toString('base64');
-	let enc1 = multibase.Base64.encode(v0, true);
-	if (enc0 !== enc1) throw 1;
-	let v1 = multibase.Base64.decode(enc0);
-	if (Buffer.compare(v0, v1)) throw 1;
-}
-console.log('OK');
+check_buffer(Multibase.for('M'), 'base64');
+check_buffer(Multibase.for('u'), 'base64url');
+check_buffer(Multibase.for('f'), 'hex');
