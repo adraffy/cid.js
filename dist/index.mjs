@@ -51,7 +51,6 @@ function write(v, u, pos = 0) {
 var uvarint = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	MAX: MAX,
-	assert: assert,
 	read: read,
 	sizeof: sizeof,
 	write: write
@@ -63,10 +62,8 @@ var uvarint = /*#__PURE__*/Object.freeze({
 
 class CharTable {
 	constructor(s) {
-		let v = [...s];
-		if (v.length !== s.length) throw new TypeError('expected chars');
-		this.chars = s;
-		this.map = new Map(v.map((x, i) => [x, i]));
+		this.chars = [...s];
+		this.map = new Map(this.chars.map((x, i) => [x, i]));
 	}
 	get length() {
 		return this.map.size;
@@ -84,11 +81,11 @@ class CharTable {
 const PAD = '=';
 
 class RFC4648 {
-	constructor(chars) {
-		this.bits = Math.log2(chars.length);
-		if (!Number.isInteger(this.bits)) throw new TypeError();
-		this.table = new CharTable(chars);
-		this.table.chars += PAD; // haxor
+	constructor(s) { // must be power of 2
+		this.table = new CharTable(s);
+		this.bits = Math.log2(this.table.length);
+		if (this.table.length < 2 || !Number.isInteger(this.bits)) throw new TypeError();
+		this.table.chars.push(PAD); // haxor
 	}
 	decode(s) {
 		let {table, bits} = this;
@@ -177,6 +174,9 @@ class Prefix0 {
 const BASES = new Map();
 
 class Multibase {
+	static [Symbol.iterator]() {
+		return BASES.values();
+	}
 	static decode(s) {
 		return this.for(s[0]).decode(s.slice(1));
 	}
@@ -220,9 +220,6 @@ class Multihash {
 		v.set(this.hash, write(v, this.hash.length, write(v, this.code, pos)));
 		return pos;
 	}
-	toJSON() {
-		return {...this};
-	}
 }
 
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-4 
@@ -234,8 +231,14 @@ const Base64URL = new RFC4648('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvw
 // https://tools.ietf.org/id/draft-msporny-base58-03.html 
 const Base58BTC = new Prefix0('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
 
+// https://www.flickr.com/groups/api/discuss/72157616713786392/
+const Base58Flickr = new Prefix0('123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ');
+
 // https://github.com/multiformats/multibase/blob/master/rfcs/Base36.md
 const Base36 = new Prefix0('0123456789abcdefghijklmnopqrstuvwxyz');
+
+// https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt
+const Base32Z = new RFC4648('ybndrfg8ejkmcpqxot1uwisza345h769');
 
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-7
 const Base32Hex = new RFC4648('0123456789abcdefghijklmnopqrstuv');
@@ -255,25 +258,26 @@ const Base8 = new RFC4648('01234567');
 // https://github.com/multiformats/multibase/blob/master/rfcs/Base2.md
 const Base2 = new RFC4648('01');
 
+// helper class to wrap a Multibase
 class MultibaseWrapper extends Multibase {
-	constructor(prefix, name, base, {casing, padding} = {}) {
+	constructor(prefix, name, coder, {casing, padding} = {}) {
 		super(prefix, name);
-		this.base = base;
+		this.coder = coder;
 		this.casing = casing;
 		this.padding = padding;
 	}
 	decode(s) {
 		if (this.casing !== undefined) s = s.toLowerCase(); // if any casing, make it lower
-		return this.base.decode(s);
+		return this.coder.decode(s);
 	}
 	encode(v) {
-		let s = this.base.encode(v, this.padding);
+		let s = this.coder.encode(v, this.padding);
 		if (this.casing) s = s.toUpperCase(); // if upper casing, make it upper
 		return s;
 	}
 }
 
-// https://github.com/multiformats/multibase#multibase-table  
+// https://github.com/multiformats/multibase#multibase-table
 new MultibaseWrapper('0', 'base2', Base2);
 new MultibaseWrapper('7', 'base8', Base8);
 new MultibaseWrapper('9', 'base10', Base10);
@@ -287,27 +291,30 @@ new MultibaseWrapper('b', 'base32', Base32, {casing: false});
 new MultibaseWrapper('B', 'base32upper', Base32, {casing: true});
 new MultibaseWrapper('c', 'base32pad', Base32, {casing: false, padding: true});
 new MultibaseWrapper('C', 'base32padupper', Base32, {casing: true, padding: true});
-// h
+new MultibaseWrapper('h', 'base32z', Base32Z);
 new MultibaseWrapper('k', 'base36', Base36, {casing: false});
-new MultibaseWrapper('K', 'base36upper', Base36, {case: true});
+new MultibaseWrapper('K', 'base36upper', Base36, {casing: true});
 new MultibaseWrapper('z', 'base58btc', Base58BTC);
-// ZBase58BTC
+new MultibaseWrapper('Z', 'base58flickr', Base58Flickr);
 new MultibaseWrapper('m', 'base64', Base64);
 new MultibaseWrapper('M', 'base64pad', Base64, {padding: true});
 new MultibaseWrapper('u', 'base64url', Base64URL);
 new MultibaseWrapper('U', 'base64urlpad', Base64URL, {padding: true});
-// p
-new MultibaseWrapper('1', 'base58btc-Identity', Base58BTC);
-new MultibaseWrapper('Q', 'base58btc-CIDv0', Base58BTC);
+// U+0070,     p,          proquint,           Proquint (https://arxiv.org/html/0901.4016)
+// U+1F680,    🚀,         base256emoji,       base256 with custom alphabet using variable-sized-codepoints
 
-const Q = Multibase.for('Q');
+// what the fuck does this mean?
+// "NOTE: Multibase-prefixes are encoding agnostic. "z" is "z", not 0x7a ("z" encoded as ASCII/UTF-8).
+//  In UTF-32, for example, that same "z" would be [0x7a, 0x00, 0x00, 0x00] not [0x7a]."
+
+const DEFAULT_BASE = Multibase.for('b');
 const SHA2_256 = 0x12;
 
 class CID {	
 	static from(v) {
 		if (typeof v === 'string') {
 			if (v.length == 46 && v.startsWith('Qm')) { // CIDv0
-				v = Q.decode(v);
+				v = Base58BTC.decode(v);
 			} else { // CIDv1
 				v = Multibase.decode(v);
 				if (v[0] == SHA2_256) throw new Error('CIDv0 cannot be multibase');
@@ -333,10 +340,6 @@ class CID {
 	}
 	//get isCID() { return true; }
 	upgrade() { return this; }
-	toJSON() {
-		let {version, codec, hash} = this;
-		return {version, codec, hash};
-	}
 }
 
 class CIDv0 extends CID {
@@ -349,7 +352,9 @@ class CIDv0 extends CID {
 	get length() { return this.hash.bytes.length; }
 	get bytes() { return this.hash.bytes; }
 	upgrade() { return new CIDv1(this.codec, this.hash); }
-	toString() { return Q.encode(this.bytes); }
+	toString() { 
+		return Base58BTC.encode(this.bytes); // only
+	}
 }
 
 class CIDv1 extends CID {
@@ -369,7 +374,7 @@ class CIDv1 extends CID {
 		if (!base) { // derive key from codec
 			switch (this.codec) {
 				case 0x72: base = 'k'; break; // libp2p-key
-				default: base = 'b';
+				default: base = DEFAULT_BASE;
 			}
 		}
 		if (!(base instanceof Multibase)) {
@@ -379,4 +384,4 @@ class CIDv1 extends CID {
 	}
 }
 
-export { Base10, Base16, Base2, Base32, Base32Hex, Base36, Base58BTC, Base64, Base64URL, Base8, CID, CIDv0, CIDv1, Multibase, MultibaseWrapper, Multihash, Prefix0, RFC4648, uvarint };
+export { Base10, Base16, Base2, Base32, Base32Hex, Base32Z, Base36, Base58BTC, Base58Flickr, Base64, Base64URL, Base8, CID, CIDv0, CIDv1, Multibase, MultibaseWrapper, Multihash, Prefix0, RFC4648, uvarint };

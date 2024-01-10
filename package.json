@@ -6,7 +6,11 @@
 		"CID",
 		"Multiformat",
 		"Multihash",
-		"uvarint"
+		"Multibase",
+		"uvarint",
+		"Base64",
+		"Base58",
+		"Base32"
 	],
 	"exports": {
 		"types": "./dist/index.d.ts",
@@ -42,7 +46,7 @@
 	},
 	"type": "module",
 	"scripts": {
-		"test": "node test/RFC4648.js && node test/Multibase.js",
+		"test": "node test/Multibase.js && node test/RFC4648.js && node test/Base58BTC.js",
 		"build": "rollup -c"
 	},
 	"devDependencies": {
