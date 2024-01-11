@@ -5,8 +5,9 @@ const PAD = '=';
 export class RFC4648 {
 	constructor(s) { // must be power of 2
 		this.table = new CharTable(s);
-		this.bits = Math.log2(this.table.length);
-		if (this.table.length < 2 || !Number.isInteger(this.bits)) throw new TypeError();
+		let n = this.table.chars.length;
+		this.bits = Math.log2(n);
+		if (n < 2 || !Number.isInteger(this.bits)) throw new TypeError();
 		this.table.chars.push(PAD); // haxor
 	}
 	decode(s) {

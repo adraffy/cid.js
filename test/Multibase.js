@@ -7,7 +7,7 @@ assert_same([
 	'K3IY8QKL64VUGCX009XWUHKF6GBBTS3TVRXFRA5R',
 	'zYAjKoNbau5KiqmHPmSxYCvn66dA1vLmwbt',
 	'MTXVsdGliYXNlIGlzIGF3ZXNvbWUhIFxvLw=='
-].map(s => Multibase.decode(s)));
+].map(s => Multibase.decode(s).data));
 console.log('PASS https://github.com/multiformats/multibase#multibase-by-example');
 
 assert_same([
@@ -33,7 +33,7 @@ assert_same([
 	'MeWVzIG1hbmkgIQ==',
 	'ueWVzIG1hbmkgIQ',
 	'UeWVzIG1hbmkgIQ=='
-].map(s => Multibase.decode(s)).concat(Buffer.from('yes mani !')));
+].map(s => Multibase.decode(s).data).concat(Buffer.from('yes mani !')));
 console.log('PASS https://github.com/multiformats/multibase/blob/master/tests/basic.csv');
 
 assert_same([
@@ -59,7 +59,7 @@ assert_same([
 	'MAAB5ZXMgbWFuaSAh',
 	'uAAB5ZXMgbWFuaSAh', 
 	'UAAB5ZXMgbWFuaSAh'
-].map(s => Multibase.decode(s)).concat(Buffer.from('\0\0yes mani !')));
+].map(s => Multibase.decode(s).data).concat(Buffer.from('\0\0yes mani !')));
 console.log('PASS https://github.com/multiformats/multibase/blob/master/tests/two_leading_zeros.csv');
 
 assert_same([
@@ -75,12 +75,10 @@ assert_same([
 	'Td1imor3f41RMUSJCCG======',
 	'kfUvrsIvVnfRbjWaJo',
 	'KfUVrSIVVnFRbJWAJo'
-].map(s => Multibase.decode(s)).concat(Buffer.from('hello world')));
+].map(s => Multibase.decode(s).data).concat(Buffer.from('hello world')));
 console.log('PASS https://github.com/multiformats/multibase/blob/master/tests/case_insensitivity.csv');
 
 for (let mb of Multibase) {
-
-
 	for (let i = 0; i < 100; i++) {
 		let v0 = random_bytes(rng(1024));
 		let enc = mb.encode(v0);

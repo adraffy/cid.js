@@ -6,7 +6,7 @@ export class Prefix0 {
 	}
 	decode(s) {
 		let {table} = this;
-		let base = table.length;
+		let base = table.chars.length;
 		let n = s.length;
 		let v = new Uint8Array(n);
 		let pos = 0;
@@ -27,7 +27,7 @@ export class Prefix0 {
 	}
 	encode(v) {
 		let {table} = this;
-		let base = table.length;
+		let base = table.chars.length;
 		let u = [];
 		for (let x of v) {
 			for (let i = 0; i < u.length; ++i) {

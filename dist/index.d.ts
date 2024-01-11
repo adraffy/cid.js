@@ -6,18 +6,19 @@ export abstract class CID {
 	version: number;
 	codec: number;
 	length: number;
-	bytes: Uint8Array;	
+	bytes: Uint8Array;
+	base?: Multibase;
 }
 export class CIDv0 extends CID {
 	constructor(hash: Uint8Array);
 }
 export class CIDv1 extends CID {
-	constructor(codec: number, hash: Uint8Array);
+	constructor(codec: number, hash: Uint8Array, base?: Multibase);
 }
 
 export class Multibase {
-	static decode(s: string): Uint8Array;
-	static for(prefix: string): Multibase;
+	static decode(s: string): {base: Multibase, data: Uint8Array};
+	static for(prefix: string|Multibase): Multibase;
 	static [Symbol.iterator](): Iterable<Multibase>;
 	prefix: string;
 	name: string;
@@ -34,7 +35,7 @@ export class Multihash {
 	constructor(code: number, hash: Uint8Array);
 	get length(): number;
 	get bytes(): Uint8Array;
-	write(buf: Uint8Array, pos?: number): number;
+	write(v: Uint8Array, pos?: number): number;
 }
 
 export const uvarint: {
@@ -62,7 +63,9 @@ export const Base10: Prefix0;
 export const Base16: RFC4648;
 export const Base32: RFC4648;
 export const Base32Hex: RFC4648;
+export const Base32Z: RFC4648;
 export const Base36: Prefix0;
 export const Base58BTC: Prefix0;
+export const Base58Flickr: Prefix0;
 export const Base64URL: RFC4648;
 export const Base64: RFC4648;

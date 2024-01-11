@@ -7,9 +7,6 @@ export class CharTable {
 		this.chars = [...s];
 		this.map = new Map(this.chars.map((x, i) => [x, i]));
 	}
-	get length() {
-		return this.map.size;
-	}
 	parse(s) {
 		let i = this.map.get(s);
 		if (!Number.isInteger(i)) throw new TypeError(`invalid digit "${s}"`);

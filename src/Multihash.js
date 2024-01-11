@@ -15,7 +15,9 @@ export class Multihash {
 		this.code = code;
 		this.hash = hash;
 	}
-	get length() { return sizeof(this.code) + sizeof(this.hash.length) + this.hash.length; }
+	get length() { 
+		return sizeof(this.code) + sizeof(this.hash.length) + this.hash.length; 
+	}
 	get bytes() {
 		let v = new Uint8Array(this.length);
 		this.write(v, 0);

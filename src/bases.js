@@ -38,8 +38,8 @@ export const Base8 = new RFC4648('01234567');
 // https://github.com/multiformats/multibase/blob/master/rfcs/Base2.md
 export const Base2 = new RFC4648('01');
 
-// helper class to wrap a Multibase
-export class MultibaseWrapper extends Multibase {
+// helper class to wrap a coder
+export class Multibased extends Multibase {
 	constructor(prefix, name, coder, {casing, padding} = {}) {
 		super(prefix, name);
 		this.coder = coder;
@@ -58,28 +58,28 @@ export class MultibaseWrapper extends Multibase {
 }
 
 // https://github.com/multiformats/multibase#multibase-table
-new MultibaseWrapper('0', 'base2', Base2);
-new MultibaseWrapper('7', 'base8', Base8);
-new MultibaseWrapper('9', 'base10', Base10);
-new MultibaseWrapper('f', 'base16', Base16, {casing: false});
-new MultibaseWrapper('F', 'base16upper', Base16, {casing: true});
-new MultibaseWrapper('v', 'base32hex', Base32Hex, {casing: false});
-new MultibaseWrapper('V', 'base32hexupper', Base32Hex, {casing: true});
-new MultibaseWrapper('t', 'base32hexpad', Base32Hex, {casing: false, padding: true});
-new MultibaseWrapper('T', 'base32hexpadupper', Base32Hex, {casing: true, padding: true});
-new MultibaseWrapper('b', 'base32', Base32, {casing: false});
-new MultibaseWrapper('B', 'base32upper', Base32, {casing: true});
-new MultibaseWrapper('c', 'base32pad', Base32, {casing: false, padding: true});
-new MultibaseWrapper('C', 'base32padupper', Base32, {casing: true, padding: true});
-new MultibaseWrapper('h', 'base32z', Base32Z);
-new MultibaseWrapper('k', 'base36', Base36, {casing: false});
-new MultibaseWrapper('K', 'base36upper', Base36, {casing: true});
-new MultibaseWrapper('z', 'base58btc', Base58BTC);
-new MultibaseWrapper('Z', 'base58flickr', Base58Flickr);
-new MultibaseWrapper('m', 'base64', Base64);
-new MultibaseWrapper('M', 'base64pad', Base64, {padding: true});
-new MultibaseWrapper('u', 'base64url', Base64URL);
-new MultibaseWrapper('U', 'base64urlpad', Base64URL, {padding: true});
+new Multibased('0', 'base2', Base2);
+new Multibased('7', 'base8', Base8);
+new Multibased('9', 'base10', Base10);
+new Multibased('f', 'base16', Base16, {casing: false});
+new Multibased('F', 'base16upper', Base16, {casing: true});
+new Multibased('v', 'base32hex', Base32Hex, {casing: false});
+new Multibased('V', 'base32hexupper', Base32Hex, {casing: true});
+new Multibased('t', 'base32hexpad', Base32Hex, {casing: false, padding: true});
+new Multibased('T', 'base32hexpadupper', Base32Hex, {casing: true, padding: true});
+new Multibased('b', 'base32', Base32, {casing: false});
+new Multibased('B', 'base32upper', Base32, {casing: true});
+new Multibased('c', 'base32pad', Base32, {casing: false, padding: true});
+new Multibased('C', 'base32padupper', Base32, {casing: true, padding: true});
+new Multibased('h', 'base32z', Base32Z);
+new Multibased('k', 'base36', Base36, {casing: false});
+new Multibased('K', 'base36upper', Base36, {casing: true});
+new Multibased('z', 'base58btc', Base58BTC);
+new Multibased('Z', 'base58flickr', Base58Flickr);
+new Multibased('m', 'base64', Base64);
+new Multibased('M', 'base64pad', Base64, {padding: true});
+new Multibased('u', 'base64url', Base64URL);
+new Multibased('U', 'base64urlpad', Base64URL, {padding: true});
 // U+0070,     p,          proquint,           Proquint (https://arxiv.org/html/0901.4016)
 // U+1F680,    🚀,         base256emoji,       base256 with custom alphabet using variable-sized-codepoints
 
