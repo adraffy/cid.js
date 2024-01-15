@@ -11,7 +11,7 @@ export class Prefix0 {
 		let v = new Uint8Array(n);
 		let pos = 0;
 		for (let c of s) {
-			let carry = table.parse(c);
+			let carry = table.indexOf(c);
 			for (let i = 0; i < pos; i++) {
 				carry += v[i] * base;
 				v[i] = carry;
@@ -41,6 +41,6 @@ export class Prefix0 {
 			}
 		}	
 		for (let i = 0; i < v.length && !v[i]; i++) u.push(0);
-		return table.format(u.reverse());
+		return table.encode(u.reverse());
 	}
 }

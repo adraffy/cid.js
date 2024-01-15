@@ -1,6 +1,6 @@
 {
 	"name": "@adraffy/cid",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Multiformat CID",
 	"keywords": [
 		"CID",
@@ -10,7 +10,8 @@
 		"uvarint",
 		"Base64",
 		"Base58",
-		"Base32"
+		"Base32",
+		"Bech32"
 	],
 	"exports": {
 		"types": "./dist/index.d.ts",
@@ -46,7 +47,7 @@
 	},
 	"type": "module",
 	"scripts": {
-		"test": "node test/Multibase.js && node test/RFC4648.js && node test/Base58BTC.js",
+		"test": "node test/Multibase.js && node test/RFC4648.js && node test/Base58BTC.js && node test/Bech32.js",
 		"build": "rollup -c"
 	},
 	"devDependencies": {

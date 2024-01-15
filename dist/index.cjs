@@ -59,21 +59,19 @@ var uvarint = /*#__PURE__*/Object.freeze({
 });
 
 // simple "abc" <-> 012 mapper
-// parse("a") => 0
-// format([0,1,2]) => "abc"
 
 class CharTable {
 	constructor(s) {
 		this.chars = [...s];
 		this.map = new Map(this.chars.map((x, i) => [x, i]));
 	}
-	parse(s) {
+	indexOf(s) {
 		let i = this.map.get(s);
 		if (!Number.isInteger(i)) throw new TypeError(`invalid digit "${s}"`);
 		return i;
 	}
-	format(v) {
-		return v.map(i => this.chars[i]).join('');
+	encode(v) {
+		return Array.from(v, i => this.chars[i]).join('');
 	}
 }
 
@@ -96,7 +94,7 @@ class RFC4648 {
 		while (n && s[n-1] == PAD) --n; // remove padding
 		let v = new Uint8Array((n * bits) >> 3);
 		for (let i = 0; i < n; i++) {
-			carry = (carry << bits) | table.parse(s[i]);
+			carry = (carry << bits) | table.indexOf(s[i]);
 			width += bits;
 			if (width >= 8) {
 				v[pos++] = (carry >> (width -= 8)) & 0xFF;
@@ -122,7 +120,7 @@ class RFC4648 {
 		}
 		if (width) u.push((carry << (bits - width)) & mask); // left align remainder
 		while (pad && (u.length * bits) & 7) u.push(mask + 1);
-		return table.format(u);
+		return table.encode(u);
 	}
 }
 
@@ -137,7 +135,7 @@ class Prefix0 {
 		let v = new Uint8Array(n);
 		let pos = 0;
 		for (let c of s) {
-			let carry = table.parse(c);
+			let carry = table.indexOf(c);
 			for (let i = 0; i < pos; i++) {
 				carry += v[i] * base;
 				v[i] = carry;
@@ -167,9 +165,69 @@ class Prefix0 {
 			}
 		}	
 		for (let i = 0; i < v.length && !v[i]; i++) u.push(0);
-		return table.format(u.reverse());
+		return table.encode(u.reverse());
 	}
 }
+
+const TABLE = new CharTable('qpzry9x8gf2tvdw0s3jn54khce6mua7l');
+const SEP = '1';
+const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+
+function polymod(v32) {
+	let check = 1;
+	for (let x of v32) {
+		let digit = check >> 25;
+		check = (check & 0x1FFFFFF) << 5 ^ x;
+		for (let i = 0; i < 5; i++) {
+			if ((digit >> i) & 1) {
+				check ^= GEN[i];
+			}
+		}
+	}
+	return check;
+}
+
+function checksum(type, hrp, v32) {
+	let check = polymod([...hrp_expand(hrp), ...v32, 0, 0, 0, 0, 0, 0]) ^ type;
+	return [25, 20, 15, 10, 5, 0].map(x => (check >> x) & 31);	
+}
+
+// This part MUST contain 1 to 83 US-ASCII characters, with each character having a value in the range [33-126]. 
+// HRP validity may be further restricted by specific applications.
+function hrp_expand(s) {
+	let v = Array.from(s, x => {
+		let cp = x.codePointAt(0);
+		if (cp < 33 || cp > 126) throw new Error(`invalid hrp: ${s}`);
+		return cp;
+	});
+	return [...v.map(x => x >> 5), 0, ...v.map(x => x & 31)];
+}
+
+class Bech32 {
+	constructor(hrp, v32, type = 1) {
+		this.hrp = hrp;
+		this.v32 = v32;
+		this.type = type;
+	}
+	toString() {
+		return this.hrp + SEP + TABLE.encode(this.v32) + TABLE.encode(checksum(this.type, this.hrp, this.v32));
+	}
+	static decode(s) {
+		let lower = s.toLowerCase();
+		if (s !== lower && s !== s.toUpperCase()) throw new Error('mixed case');
+		let pos = lower.lastIndexOf(SEP);
+		if (pos < 0) throw new Error('no hrp');
+		if (lower.length - pos < 7) throw new Error('no check');
+		let hrp = lower.slice(0, pos);
+		let v32 = Uint8Array.from(lower.slice(pos + 1), x => TABLE.indexOf(x));
+		return new this(hrp, v32.subarray(0, -6), polymod([...hrp_expand(hrp), ...v32]));
+	}
+}
+Object.defineProperty(Bech32, 'M', {
+	value: 0x2BC830A3,
+	writable: false,
+	configurable: false,
+});
 
 const BASES = new Map();
 
@@ -230,6 +288,30 @@ class Multihash {
 		v.set(this.hash, write(v, this.hash.length, write(v, this.code, pos)));
 		return pos;
 	}
+}
+
+// https://github.com/Chia-Network/chia-blockchain/blob/af0d6385b238c91bff4fec1a9e9c0f6158fbf896/chia/util/bech32m.py#L85
+function convert(v, src, dst, pad, ret = []) {
+	let acc = 0;
+	let bits = 0;
+	let mask = (1 << dst) - 1;
+	for (let x of v) {
+		if (x < 0 || x >> src) throw new Error('invalid digit');
+		acc = ((acc & 0xFFFF) << src) | x;
+		bits += src;
+		while (bits >= dst) {
+			bits -= dst;
+			ret.push((acc >> bits) & mask);
+		}
+	}
+	if (pad) {
+		if (bits) {
+			ret.push((acc << (dst - bits)) & mask);
+		}
+	} else if (bits >= src || ((acc << (dst - bits)) & mask)) {
+		throw new Error('malformed');
+	}
+	return Uint8Array.from(ret);
 }
 
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-4 
@@ -398,6 +480,7 @@ exports.Base58Flickr = Base58Flickr;
 exports.Base64 = Base64;
 exports.Base64URL = Base64URL;
 exports.Base8 = Base8;
+exports.Bech32 = Bech32;
 exports.CID = CID;
 exports.CIDv0 = CIDv0;
 exports.CIDv1 = CIDv1;
@@ -406,4 +489,5 @@ exports.Multibased = Multibased;
 exports.Multihash = Multihash;
 exports.Prefix0 = Prefix0;
 exports.RFC4648 = RFC4648;
+exports.convert = convert;
 exports.uvarint = uvarint;

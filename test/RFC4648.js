@@ -8,12 +8,12 @@ function check_buffer(mb, encoding) {
 		let enc1 = mb.encode(v0);
 		if (enc0 !== enc1) {
 			console.log({encoding, v0, enc0, enc1});
-			throw 'encode';
+			throw new Error('encode');
 		}
 		let v1 = mb.decode(enc0);
 		if (Buffer.compare(v0, v1)) {
 			console.log({encoding, v0, v1});
-			throw 'decode';
+			throw new Error('decode');
 		}
 	}
 	console.log(`PASS buffer/${encoding}`);

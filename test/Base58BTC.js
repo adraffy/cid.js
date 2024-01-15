@@ -1,5 +1,6 @@
 import {Base58BTC} from '../src/index.js';
 
+// https://datatracker.ietf.org/doc/html/draft-msporny-base58-03#section-5
 [
 	[Buffer.from('Hello World!'), '2NEpo7TZRRrLZSi2U'],
 	[Buffer.from('The quick brown fox jumps over the lazy dog.'), 'USm3fpXnKG5EUBx2ndxBDMPVciP5hGey2Jh4NDv6gmeo1LkMeiKrLJUUBk6Z'],
@@ -8,12 +9,12 @@ import {Base58BTC} from '../src/index.js';
 	let res = Base58BTC.encode(dec);
 	if (enc !== res) {
 		console.log({dec, enc, res});
-		throw 'encode';
+		throw new Error('encode');
 	}
 	res = Base58BTC.decode(enc);
 	if (Buffer.compare(dec, res)) {
 		console.log({dec, enc, res});
-		throw 'decode';
+		throw new Error('decode');
 	}
 });
-console.log('PASS https://datatracker.ietf.org/doc/html/draft-msporny-base58-03#section-5');
+console.log('PASS known base58btc');

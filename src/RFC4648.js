@@ -19,7 +19,7 @@ export class RFC4648 {
 		while (n && s[n-1] == PAD) --n; // remove padding
 		let v = new Uint8Array((n * bits) >> 3);
 		for (let i = 0; i < n; i++) {
-			carry = (carry << bits) | table.parse(s[i]);
+			carry = (carry << bits) | table.indexOf(s[i]);
 			width += bits;
 			if (width >= 8) {
 				v[pos++] = (carry >> (width -= 8)) & 0xFF;
@@ -45,6 +45,6 @@ export class RFC4648 {
 		}
 		if (width) u.push((carry << (bits - width)) & mask); // left align remainder
 		while (pad && (u.length * bits) & 7) u.push(mask + 1);
-		return table.format(u);
+		return table.encode(u);
 	}
 }
