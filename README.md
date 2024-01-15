@@ -1,5 +1,5 @@
 # cid.js
-0-dependancy [Multiformat CID](https://github.com/multiformats/cid/blob/master/README.md).
+0-dependancy [Multiformat CID](https://github.com/multiformats/cid/blob/master/README.md) and related coders.
 
 * [`7KB`](./dist/index.min.js) **Default** — full library
 
@@ -40,9 +40,7 @@ cid1.toString(Multibase.for('z')); // use different base ("z" => base58btc)
 // zdj7WXCTUquTeArWZZbaegbyYuz8mujpBZJkCQsfcvE458QR1
 ```
 
-[Available bases](./src/bases.js#L60)
-
-Available coders:
+Available [bases](./src/bases.js#L60) / coders:
 ```js
 import {
   Base2, Base8, Base16, Base32, Base32Hex, Base32Z, Base64, Base64URL, // RFC4648

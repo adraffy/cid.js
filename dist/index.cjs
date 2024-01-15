@@ -314,35 +314,41 @@ function convert(v, src, dst, pad, ret = []) {
 	return Uint8Array.from(ret);
 }
 
+const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const az = AZ.toLowerCase();
+const Z9 = '0123456789';
+
+function drop58(s) { return s.replaceAll(/[0OIl]/g, ''); }
+
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-4 
-const Base64 = new RFC4648('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
+const Base64 = new RFC4648(AZ + az + Z9 + '+/');
 
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-5
-const Base64URL = new RFC4648('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_');
+const Base64URL = new RFC4648(AZ + az + Z9 + '-_');
 
 // https://tools.ietf.org/id/draft-msporny-base58-03.html 
-const Base58BTC = new Prefix0('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
+const Base58BTC = new Prefix0(drop58(Z9 + AZ + az));
 
 // https://www.flickr.com/groups/api/discuss/72157616713786392/
-const Base58Flickr = new Prefix0('123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ');
+const Base58Flickr = new Prefix0(drop58(Z9 + az + AZ));
 
 // https://github.com/multiformats/multibase/blob/master/rfcs/Base36.md
-const Base36 = new Prefix0('0123456789abcdefghijklmnopqrstuvwxyz');
+const Base36 = new Prefix0(Z9 + az);
 
 // https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt
 const Base32Z = new RFC4648('ybndrfg8ejkmcpqxot1uwisza345h769');
 
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-7
-const Base32Hex = new RFC4648('0123456789abcdefghijklmnopqrstuv');
+const Base32Hex = new RFC4648(Z9 + az.slice(0, -4));
 
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-6
 const Base32 = new RFC4648('abcdefghijklmnopqrstuvwxyz234567');
 
 // https://www.rfc-editor.org/rfc/rfc4648.html#section-8
-const Base16 = new RFC4648('0123456789abcdef');
+const Base16 = new RFC4648(Z9 + 'abcdef');
 
 // https://github.com/multiformats/multibase/blob/master/rfcs/Base10.md
-const Base10 = new Prefix0('0123456789'); 
+const Base10 = new Prefix0(Z9); 
 
 // https://github.com/multiformats/multibase/blob/master/rfcs/Base8.md
 const Base8 = new RFC4648('01234567');
