@@ -1,18 +1,29 @@
 import {Multibase} from '../src/index.js';
-import {rng, random_bytes, assert_same} from './utils.js';
+import {test, assert, rng, random_bytes} from './utils.js';
+
+function check_same(name, encoded, raw) {
+	test(`multibase/${name}`, () => {
+		let v = encoded.map(s => Buffer.from(Multibase.decode(s).data));
+		for (let i = 1; i < encoded.length; i++) {
+			assert.deepEqual(v[0], v[i]);
+		}
+		if (raw) {
+			assert.deepEqual(v[0], raw);
+		}
+	});	
+}
 
 // https://github.com/multiformats/multibase#multibase-by-example
-assert_same([
+check_same('example', [
 	'F4D756C74696261736520697320617765736F6D6521205C6F2F',
 	'BJV2WY5DJMJQXGZJANFZSAYLXMVZW63LFEEQFY3ZP',
 	'K3IY8QKL64VUGCX009XWUHKF6GBBTS3TVRXFRA5R',
 	'zYAjKoNbau5KiqmHPmSxYCvn66dA1vLmwbt',
 	'MTXVsdGliYXNlIGlzIGF3ZXNvbWUhIFxvLw=='
-].map(s => Multibase.decode(s).data));
-console.log('PASS multibase/example');
+]);
 
 // https://github.com/multiformats/multibase/blob/master/tests/basic.csv
-assert_same([
+check_same('basic', [
 	'001111001011001010111001100100000011011010110000101101110011010010010000000100001',
 	'7362625631006654133464440102',
 	'9573277761329450583662625',
@@ -35,11 +46,11 @@ assert_same([
 	'MeWVzIG1hbmkgIQ==',
 	'ueWVzIG1hbmkgIQ',
 	'UeWVzIG1hbmkgIQ=='
-].map(s => Multibase.decode(s).data).concat(Buffer.from('yes mani !')));
-console.log('PASS multibase/basic');
+], Buffer.from('yes mani !'));
+
 
 // https://github.com/multiformats/multibase/blob/master/tests/two_leading_zeros.csv
-assert_same([
+check_same('leading00', [
 	'0000000000000000001111001011001010111001100100000011011010110000101101110011010010010000000100001',
 	'700000171312714403326055632220041',
 	'900573277761329450583662625',
@@ -62,11 +73,10 @@ assert_same([
 	'MAAB5ZXMgbWFuaSAh',
 	'uAAB5ZXMgbWFuaSAh', 
 	'UAAB5ZXMgbWFuaSAh'
-].map(s => Multibase.decode(s).data).concat(Buffer.from('\0\0yes mani !')));
-console.log('PASS multibase/00');
+], Buffer.from('\0\0yes mani !'));
 
 // https://github.com/multiformats/multibase/blob/master/tests/case_insensitivity.csv
-assert_same([
+check_same('case', [
 	'f68656c6c6f20776F726C64',
 	'F68656c6c6f20776F726C64',
 	'bnbswy3dpeB3W64TMMQ',
@@ -79,18 +89,16 @@ assert_same([
 	'Td1imor3f41RMUSJCCG======',
 	'kfUvrsIvVnfRbjWaJo',
 	'KfUVrSIVVnFRbJWAJo'
-].map(s => Multibase.decode(s).data).concat(Buffer.from('hello world')));
-console.log('PASS multibase/case');
+], Buffer.from('hello world'));
+
 
 for (let mb of Multibase) {
-	for (let i = 0; i < 100; i++) {
-		let v0 = random_bytes(rng(1024));
-		let enc = mb.encode(v0);
-		let v1 = mb.decode(enc);
-		if (Buffer.compare(v0, v1)) {
-			console.log({v0, enc, v1});
-			throw new Error('random');
+	test(`multibase/${mb.name}`, () => {
+		for (let i = 0; i < 100; i++) {
+			let v0 = random_bytes(rng(1024));
+			let enc = mb.encode(v0);
+			let v1 = mb.decode(enc);
+			assert.deepEqual(v0, v1);
 		}
-	}
-	console.log(`PASS ${mb.name}`);
+	});
 }

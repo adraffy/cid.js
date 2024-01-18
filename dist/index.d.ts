@@ -5,7 +5,6 @@ export abstract class CID {
 	upgrade(): CIDv1;
 	version: number;
 	codec: number;
-	length: number;
 	bytes: Uint8Array;
 	base?: Multibase;
 }
@@ -33,16 +32,16 @@ export class Multihash {
 	code: number;
 	hash: Uint8Array;
 	constructor(code: number, hash: Uint8Array);
-	get length(): number;
 	get bytes(): Uint8Array;
 	write(v: Uint8Array, pos?: number): number;
 }
 
 export const uvarint: {
-	MAX: number;
-	sizeof(u: number): number;
+	readBytes(v: BytesLike, pos?: number): [u: number[], pos: number],
+	readHex(v: BytesLike, pos?: number): [u: string, pos: number],
+	readBigInt(v: BytesLike, pos?: number): [u: BigInt, pos: number],
 	read(v: BytesLike, pos?: number): [u: number, pos: number],
-	write(v: BytesLike, u: number, pos?: number): number;
+	write(v: BytesLike, u: BytesLike|string|number, pos?: number): number;
 }
 
 export class RFC4648 {
@@ -55,6 +54,15 @@ export class Prefix0 {
 	constructor(chars: string);
 	decode(s: string): Uint8Array;
 	encode(v: BytesLike): string;
+}
+
+export class Bech32 {
+	static M: number;
+	static decode(s: string): Bech32;
+	constructor(hrp: string, v32: number[], type?: number);
+	hrp: string;
+	v32: number[];
+	type: number;
 }
 
 export const Base2: RFC4648;

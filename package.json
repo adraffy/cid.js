@@ -47,7 +47,7 @@
 	},
 	"type": "module",
 	"scripts": {
-		"test": "node test/Multibase.js && node test/RFC4648.js && node test/Base58BTC.js && node test/Bech32.js",
+		"test": "node test/all.js",
 		"build": "rollup -c"
 	},
 	"devDependencies": {

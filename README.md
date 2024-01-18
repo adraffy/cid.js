@@ -12,16 +12,15 @@ let cid = CID.from('QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5');
 // CIDv0 {
 //   hash: Multihash { ... }
 // }
-cid.version; // uvarint => 0
+cid.version; // uvarint: 0, 1
 cid.base;    // remembers source base (if CIDv1) => undefined
-cid.codec;   // uvarint => 112
+cid.codec;   // uvarint, eg. always 0x70 for CIDv0
 cid.hash;
 // Multihash {
 //   code: number,
 //   hash: Uint8Array() [ ... ]
 // }
 cid.bytes; // encoded bytes => Uint8Array(34) [ ... ]
-cid.length; // length of encoded bytes => 34
 cid.toString(); // provided base is ignored
 // "QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5"
 
@@ -47,6 +46,28 @@ import {
   Base10, Base36, Base58BTC, Base58Flickr, // Prefix0
   Bech32,
 } from '@adraffy/cid.js';
+
+let bech = Bech32.decode('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
+bech.hrp;  // string, human-readable part, eg. "bc"
+bech.type; // number: 1, Bech32.M, etc. (note: this is the checksum)
+bech.v32;  // array of base32 numbers
+```
+
+Arbitrary-precision [uvarint](./src/uvarint.js):
+```js
+import {uvarint} from '@adraffy/cid.js'; // also: dist/uvarint.min.js
+
+let v = []; // output buffer (Array or Uint8Array)
+let p = 0; // write position
+p = uvarint.write(v, 69, p);      // Number
+p = uvarint.write(v, '0x420', p); // HexString
+p = uvarint.write(v, 1337n, p);   // BigInt
+p = 0; // reset position
+let u; // read written values:
+[u, p] = uvarint.readHex(v, p); // "0x45" == 69
+[u, p] = uvarint.read(v, p);    //   1056 == 0x420
+[u] = uvarint.readBigInt(v, p); // 1337n
+[u] = uvarint.readBytes(v, p);  // [5, 57] = 5*256+57 = 1337
 ```
 
 ### Build

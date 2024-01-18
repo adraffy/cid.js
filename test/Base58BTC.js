@@ -1,20 +1,14 @@
-import {Base58BTC} from '../src/index.js';
+import {test, assert, safe_name} from './utils.js';
+import {Base58BTC} from '../src/bases.js';
+
+function check_known(buf, enc) {
+	test(`base58btc/${safe_name(buf)}`, () => {
+		assert.equal(enc, Base58BTC.encode(buf));
+		assert.deepEqual(buf, Buffer.from(Base58BTC.decode(enc)));
+	});
+}
 
 // https://datatracker.ietf.org/doc/html/draft-msporny-base58-03#section-5
-[
-	[Buffer.from('Hello World!'), '2NEpo7TZRRrLZSi2U'],
-	[Buffer.from('The quick brown fox jumps over the lazy dog.'), 'USm3fpXnKG5EUBx2ndxBDMPVciP5hGey2Jh4NDv6gmeo1LkMeiKrLJUUBk6Z'],
-	[Buffer.from('0000287fb4cd', 'hex'), '11233QC4']
-].forEach(([dec, enc]) => {
-	let res = Base58BTC.encode(dec);
-	if (enc !== res) {
-		console.log({dec, enc, res});
-		throw new Error('encode');
-	}
-	res = Base58BTC.decode(enc);
-	if (Buffer.compare(dec, res)) {
-		console.log({dec, enc, res});
-		throw new Error('decode');
-	}
-});
-console.log('PASS known base58btc');
+check_known(Buffer.from('Hello World!'), '2NEpo7TZRRrLZSi2U');
+check_known(Buffer.from('The quick brown fox jumps over the lazy dog.'), 'USm3fpXnKG5EUBx2ndxBDMPVciP5hGey2Jh4NDv6gmeo1LkMeiKrLJUUBk6Z');
+check_known(Buffer.from('0000287fb4cd', 'hex'), '11233QC4');

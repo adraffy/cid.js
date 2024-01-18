@@ -1,22 +1,17 @@
+import {test, assert, rng, random_bytes} from './utils.js';
 import {Multibase} from '../src/index.js';
-import {rng, random_bytes} from './utils.js';
 
 function check_buffer(mb, encoding) {
-	for (let i = 0; i < 1000; i++) {
-		let v0 = random_bytes(rng(1024));
-		let enc0 = Buffer.from(v0).toString(encoding);
-		let enc1 = mb.encode(v0);
-		if (enc0 !== enc1) {
-			console.log({encoding, v0, enc0, enc1});
-			throw new Error('encode');
+	test(`buffer/${encoding}`, () => {
+		for (let i = 0; i < 1000; i++) {
+			let v0 = random_bytes(rng(1024));
+			let enc0 = Buffer.from(v0).toString(encoding);
+			let enc1 = mb.encode(v0);
+			assert.equal(enc0, enc1);
+			let v1 = mb.decode(enc0);
+			assert.deepEqual(v0, v1);
 		}
-		let v1 = mb.decode(enc0);
-		if (Buffer.compare(v0, v1)) {
-			console.log({encoding, v0, v1});
-			throw new Error('decode');
-		}
-	}
-	console.log(`PASS buffer/${encoding}`);
+	});
 }
 
 check_buffer(Multibase.for('M'), 'base64');

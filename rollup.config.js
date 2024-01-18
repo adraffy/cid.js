@@ -28,4 +28,14 @@ export default defineConfig([
 			},
 		],
 	},
+	{
+		input: './src/uvarint.js',
+		output: [
+			{
+				file: './dist/uvarint.min.js',
+				format: 'es',
+				plugins: [TERSER],
+			},
+		],
+	}
 ]);

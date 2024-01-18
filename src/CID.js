@@ -1,4 +1,4 @@
-import {read, write, sizeof} from './uvarint.js';
+import {read, write} from './uvarint.js';
 import {Multibase} from './Multibase.js';
 import {Multihash} from './Multihash.js';
 import {Base58BTC} from './bases.js';
@@ -45,7 +45,6 @@ export class CIDv0 extends CID {
 	}
 	get version() { return 0; }
 	get codec() { return 0x70; }
-	get length() { return this.hash.bytes.length; }
 	get bytes() { return this.hash.bytes; }
 	upgrade() { return new CIDv1(this.codec, this.hash); }
 	toString() { 
@@ -61,11 +60,10 @@ export class CIDv1 extends CID {
 		this.base = base;
 	}
 	get version() { return 1; }
-	get length() { return sizeof(this.version) + sizeof(this.codec) + this.hash.length; }
 	get bytes() {
-		let v = new Uint8Array(this.length);
-		this.hash.write(v, write(v, this.codec, write(v, this.version, 0)));
-		return v;
+		let v = [];
+		this.hash.write(v, write(v, this.codec, write(v, this.version)));
+		return Uint8Array.from(v);
 	}
 	toString(base) {
 		return Multibase.for(base || this.base || 'b').encodeWithPrefix(this.bytes);

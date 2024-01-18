@@ -4,11 +4,11 @@ const PAD = '=';
 
 export class RFC4648 {
 	constructor(s) { // must be power of 2
-		this.table = new CharTable(s);
-		let n = this.table.chars.length;
-		this.bits = Math.log2(n);
-		if (n < 2 || !Number.isInteger(this.bits)) throw new TypeError();
-		this.table.chars.push(PAD); // haxor
+		let table = this.table = new CharTable(s);
+		let n = table.length;
+		let bits = this.bits = Math.log2(n);
+		if (n < 2 || !Number.isInteger(bits)) throw new TypeError();
+		table.chars.push(PAD); // haxor
 	}
 	decode(s) {
 		let {table, bits} = this;
@@ -35,8 +35,7 @@ export class RFC4648 {
 		let carry = 0;
 		let width = 0;
 		let u = [];
-		let n = v.length;
-		for (let i = 0; i < n; i++) {
+		for (let i = 0, e = v.length; i < e; i++) {
 			carry = (carry << 8) | v[i];
 			width += 8;
 			while (width >= bits) {

@@ -1,4 +1,4 @@
-import {sizeof, read, write} from './uvarint.js';
+import {read, write} from './uvarint.js';
 import {Multibase} from './Multibase.js';
 
 export class Multihash {
@@ -15,16 +15,15 @@ export class Multihash {
 		this.code = code;
 		this.hash = hash;
 	}
-	get length() { 
-		return sizeof(this.code) + sizeof(this.hash.length) + this.hash.length; 
-	}
 	get bytes() {
-		let v = new Uint8Array(this.length);
+		let v = [];
 		this.write(v, 0);
-		return v;
+		return Uint8Array.from(v);
 	}
 	write(v, pos) {
-		v.set(this.hash, write(v, this.hash.length, write(v, this.code, pos)));
+		let {hash, code} = this;
+		pos = write(v, hash.length, write(v, code, pos));
+		hash.forEach(x => v[pos++] = x);
 		return pos;
 	}
 }

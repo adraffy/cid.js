@@ -2,8 +2,11 @@
 
 export class CharTable {
 	constructor(s) {
-		this.chars = [...s];
-		this.map = new Map(this.chars.map((x, i) => [x, i]));
+		let v = this.chars = [...s];
+		this.map = new Map(v.map((x, i) => [x, i]));
+	}
+	get length() {
+		return this.map.size;
 	}
 	indexOf(s) {
 		let i = this.map.get(s);

@@ -2,59 +2,73 @@
 
 //https://github.com/multiformats/unsigned-varint
 
-const B = 128;
-const MASK = B-1;
-const MAX = (() => {
-	let max = 1;
-	while (Number.isSafeInteger(max * B)) max *= B;
-	return max;
-})();
-
-function assert(u) {	
-	if (!Number.isSafeInteger(u) || u < 0) {
-		throw new TypeError(`invalid uvarint: ${u}`);
-	}
+function hex(v) {
+	return '0x' + v.map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
-// returns number of bytes to encode the int
-function sizeof(u) {
-	assert(u);
-	let n = 1;
-	for (; u >= B; ++n) u = Math.floor(u / B);
-	return n;
-}
-
-// reads a uvarint from ArrayLike 
-function read(v, pos = 0) {
-	let u = 0;
-	for (let b = 1; ; b *= B) {
-		if (pos >= v.length) throw new RangeError(`buffer overflow`);
-		let next = v[pos++];
-		u += (next & MASK) * b;
-		if (next < B) break;
-		if (b == MAX) throw new RangeError('uvarint overflow');
-	}
-	return [u, pos];
-}
-
-// write a uvarint of i into Uint8Array at pos
-// returns new position
-function write(v, u, pos = 0) {
-	assert(u);
+// read arbitrary-sized uvarint from v at pos
+// returns number[]
+function readBytes(v, pos = 0) {
+	let bits = 0, temp = 0, bytes = [];
+	const mask = 127;
 	while (true) {
-		if (u < B) break;
-		v[pos++] = (u & MASK) | B;
-		u = Math.floor(u / B);
+		if (pos >= v.length) throw new RangeError('buffer overflow');
+		let next = v[pos++];
+		temp |= (next & mask) << bits;
+		bits += 7;
+		if (bits >= 8) {
+			bytes.push(temp & 255);
+			temp >>= 8;
+			bits -= 8;
+		}
+		if (next <= mask) break;
 	}
-	v[pos++] = u;
+	if (bits) bytes.push(temp);
+	return [bytes.reverse(), pos];
+}
+function readHex(v, p) {
+	[v, p] = readBytes(v, p);
+	return [hex(v), p];
+}
+function readBigInt(v, p) {
+	[v, p] = readBytes(v, p);
+	return [BigInt(hex(v)), p];
+}
+function read(v, p) {
+	[v, p] = readBytes(v, p);
+	let u = parseInt(hex(v));
+	if (!Number.isSafeInteger(u)) throw new RangeError('unsafe');
+	return [u, p];
+}
+
+// write a uvarint of u into ArrayLike at pos
+// returns new position
+// accepts number|BigInt|string
+function write(v, u, pos = 0) {
+	if (typeof u === 'number' && !Number.isSafeInteger(u)) throw new RangeError('unsafe');
+	u = BigInt(u);
+	if (u < 0) throw new RangeError('negative');
+	const mask = 127n;
+	while (u > mask) {
+		v[pos++] = Number(u & mask) | 128;
+		u >>= 7n;
+	}
+	v[pos++] = Number(u);
 	return pos;
 }
 
+// this is too trivial
+// returns number of bytes to encode the uvarint
+// export function sizeof(u) {
+// 	return write([], u);
+// }
+
 var uvarint = /*#__PURE__*/Object.freeze({
 	__proto__: null,
-	MAX: MAX,
 	read: read,
-	sizeof: sizeof,
+	readBigInt: readBigInt,
+	readBytes: readBytes,
+	readHex: readHex,
 	write: write
 });
 
@@ -62,8 +76,11 @@ var uvarint = /*#__PURE__*/Object.freeze({
 
 class CharTable {
 	constructor(s) {
-		this.chars = [...s];
-		this.map = new Map(this.chars.map((x, i) => [x, i]));
+		let v = this.chars = [...s];
+		this.map = new Map(v.map((x, i) => [x, i]));
+	}
+	get length() {
+		return this.map.size;
 	}
 	indexOf(s) {
 		let i = this.map.get(s);
@@ -79,11 +96,11 @@ const PAD = '=';
 
 class RFC4648 {
 	constructor(s) { // must be power of 2
-		this.table = new CharTable(s);
-		let n = this.table.chars.length;
-		this.bits = Math.log2(n);
-		if (n < 2 || !Number.isInteger(this.bits)) throw new TypeError();
-		this.table.chars.push(PAD); // haxor
+		let table = this.table = new CharTable(s);
+		let n = table.length;
+		let bits = this.bits = Math.log2(n);
+		if (n < 2 || !Number.isInteger(bits)) throw new TypeError();
+		table.chars.push(PAD); // haxor
 	}
 	decode(s) {
 		let {table, bits} = this;
@@ -110,8 +127,7 @@ class RFC4648 {
 		let carry = 0;
 		let width = 0;
 		let u = [];
-		let n = v.length;
-		for (let i = 0; i < n; i++) {
+		for (let i = 0, e = v.length; i < e; i++) {
 			carry = (carry << 8) | v[i];
 			width += 8;
 			while (width >= bits) {
@@ -130,7 +146,7 @@ class Prefix0 {
 	}
 	decode(s) {
 		let {table} = this;
-		let base = table.chars.length;
+		let base = table.length;
 		let n = s.length;
 		let v = new Uint8Array(n);
 		let pos = 0;
@@ -151,7 +167,7 @@ class Prefix0 {
 	}
 	encode(v) {
 		let {table} = this;
-		let base = table.chars.length;
+		let base = table.length;
 		let u = [];
 		for (let x of v) {
 			for (let i = 0; i < u.length; ++i) {
@@ -169,9 +185,15 @@ class Prefix0 {
 	}
 }
 
+// https://en.bitcoin.it/wiki/BIP_0173 bech32
+// https://en.bitcoin.it/wiki/BIP_0350 bech32m
+
+
+// Encoders MUST always output an all lowercase Bech32 string
 const TABLE = new CharTable('qpzry9x8gf2tvdw0s3jn54khce6mua7l');
 const SEP = '1';
-const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+const GEN = [0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3];
+const TYPE_M = 0x2BC830A3;
 
 function polymod(v32) {
 	let check = 1;
@@ -192,39 +214,46 @@ function checksum(type, hrp, v32) {
 	return [25, 20, 15, 10, 5, 0].map(x => (check >> x) & 31);	
 }
 
-// This part MUST contain 1 to 83 US-ASCII characters, with each character having a value in the range [33-126]. 
-// HRP validity may be further restricted by specific applications.
+// This part MUST contain 1 to 83 US-ASCII characters,
+// with each character having a value in the range [33-126].
 function hrp_expand(s) {
 	let v = Array.from(s, x => {
 		let cp = x.codePointAt(0);
-		if (cp < 33 || cp > 126) throw new Error(`invalid hrp: ${s}`);
+		if (cp < 33 || cp > 126) throw new Error(`invalid hrp character: ${s}`);
 		return cp;
 	});
+	let n = v.length;
+	if (!n || n > 83) throw new Error(`invalid hrp length`);
 	return [...v.map(x => x >> 5), 0, ...v.map(x => x & 31)];
 }
 
 class Bech32 {
 	constructor(hrp, v32, type = 1) {
 		this.hrp = hrp;
-		this.v32 = v32;
+		this.v32 = v32; // this is array of base32 numbers
 		this.type = type;
 	}
+	//get is1() { return this.type === 1; }
+	//get isM() { return this.type === TYPE_M; }
 	toString() {
 		return this.hrp + SEP + TABLE.encode(this.v32) + TABLE.encode(checksum(this.type, this.hrp, this.v32));
 	}
 	static decode(s) {
+		// The lowercase form is used when determining a character's value for checksum purposes. 
 		let lower = s.toLowerCase();
+		// Decoders MUST NOT accept strings where some characters are uppercase and 
+		// some are lowercase (such strings are referred to as mixed case strings).
 		if (s !== lower && s !== s.toUpperCase()) throw new Error('mixed case');
 		let pos = lower.lastIndexOf(SEP);
-		if (pos < 0) throw new Error('no hrp');
+		if (pos < 1) throw new Error('no hrp');
 		if (lower.length - pos < 7) throw new Error('no check');
 		let hrp = lower.slice(0, pos);
 		let v32 = Uint8Array.from(lower.slice(pos + 1), x => TABLE.indexOf(x));
-		return new this(hrp, v32.subarray(0, -6), polymod([...hrp_expand(hrp), ...v32]));
+		return new this(hrp, v32.subarray(0, -6), polymod([...hrp_expand(hrp), ...v32])); 
 	}
 }
 Object.defineProperty(Bech32, 'M', {
-	value: 0x2BC830A3,
+	value: TYPE_M,
 	writable: false,
 	configurable: false,
 });
@@ -276,16 +305,15 @@ class Multihash {
 		this.code = code;
 		this.hash = hash;
 	}
-	get length() { 
-		return sizeof(this.code) + sizeof(this.hash.length) + this.hash.length; 
-	}
 	get bytes() {
-		let v = new Uint8Array(this.length);
+		let v = [];
 		this.write(v, 0);
-		return v;
+		return Uint8Array.from(v);
 	}
 	write(v, pos) {
-		v.set(this.hash, write(v, this.hash.length, write(v, this.code, pos)));
+		let {hash, code} = this;
+		pos = write(v, hash.length, write(v, code, pos));
+		hash.forEach(x => v[pos++] = x);
 		return pos;
 	}
 }
@@ -447,7 +475,6 @@ class CIDv0 extends CID {
 	}
 	get version() { return 0; }
 	get codec() { return 0x70; }
-	get length() { return this.hash.bytes.length; }
 	get bytes() { return this.hash.bytes; }
 	upgrade() { return new CIDv1(this.codec, this.hash); }
 	toString() { 
@@ -463,11 +490,10 @@ class CIDv1 extends CID {
 		this.base = base;
 	}
 	get version() { return 1; }
-	get length() { return sizeof(this.version) + sizeof(this.codec) + this.hash.length; }
 	get bytes() {
-		let v = new Uint8Array(this.length);
-		this.hash.write(v, write(v, this.codec, write(v, this.version, 0)));
-		return v;
+		let v = [];
+		this.hash.write(v, write(v, this.codec, write(v, this.version)));
+		return Uint8Array.from(v);
 	}
 	toString(base) {
 		return Multibase.for(base || this.base || 'b').encodeWithPrefix(this.bytes);
