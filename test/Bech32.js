@@ -11,7 +11,7 @@ function check_type(type) {
 			let v0 = Uint8Array.from({length: rng(1000)}, () => rng(32));
 			let hrp = random_hrp();
 			let enc = new Bech32(hrp, v0, type).toString();
-			let v1 = Bech32.from(enc, type).v32;
+			let v1 = Bech32.decode(enc, type).v32;
 			assert.deepEqual(v0, v1);
 		}
 	});
@@ -21,7 +21,7 @@ function check_known(s, type) {
 	test(`bech32/${safe_name(s)}`, () => {
 		let bech;
 		try {
-			bech = Bech32.from(s);
+			bech = Bech32.decode(s);
 		} catch (err) {
 			if (type) assert.fail(s);
 		}

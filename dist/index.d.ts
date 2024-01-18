@@ -58,7 +58,7 @@ export class Prefix0 {
 
 export class Bech32 {
 	static M: number;
-	static from(s: string): Bech32;
+	static decode(s: string): Bech32;
 	constructor(hrp: string, v32: number[], type?: number);
 	hrp: string;
 	v32: number[];

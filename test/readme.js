@@ -1,4 +1,4 @@
-import {CID, Multibase, Bech32, uvarint} from '../src/index.js';
+import {CID, Multibase, Bech32, Base58BTC, uvarint} from '../src/index.js';
 
 console.log('==== CID ====');
 
@@ -15,9 +15,15 @@ console.log(cid1.toString());
 console.log(cid1.toString('k'));
 console.log(cid1.toString(Multibase.for('z')));
 
+console.log('=== Multibase === ');
+
+let enc = Base58BTC.encode([1, 2, 255]).toString();
+console.log(enc);
+console.log(Base58BTC.decode(enc));
+
 console.log('=== Bech32 ====');
 
-let bech = Bech32.from('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
+let bech = Bech32.decode('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
 let {hrp, type, v32} = bech;
 console.log({hrp, type, v32});
 

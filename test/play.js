@@ -20,7 +20,7 @@ function dump_cid(s) {
 function dump_bech(s) {
 	console.log();
 	console.log(s);
-	let bech = Bech32.from(s);
+	let bech = Bech32.decode(s);
 	console.log(bech.toString())
 	console.log(bech);
 }

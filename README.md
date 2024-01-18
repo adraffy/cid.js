@@ -47,7 +47,11 @@ import {
   Bech32,
 } from '@adraffy/cid';
 
-let bech = Bech32.from('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
+// all bases have encode/decode API
+Base58BTC.encode([1, 2, 255]); // "LiA"
+Base58BTC.decode('LiA'); // [1, 2, 255]
+
+let bech = Bech32.decode('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
 bech.hrp;  // string, human-readable part, eg. "bc"
 bech.type; // number: 1, Bech32.M, etc. (note: this is the checksum)
 bech.v32;  // array of base32 numbers

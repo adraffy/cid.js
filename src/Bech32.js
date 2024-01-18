@@ -59,7 +59,7 @@ export class Bech32 {
 	toString() {
 		return this.hrp + SEP + TABLE.encode(this.v32) + TABLE.encode(checksum(this.type, this.hrp, this.v32));
 	}
-	static from(s) {
+	static decode(s) {
 		// The lowercase form is used when determining a character's value for checksum purposes. 
 		let lower = s.toLowerCase();
 		// Decoders MUST NOT accept strings where some characters are uppercase and 
