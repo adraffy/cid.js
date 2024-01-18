@@ -17,8 +17,8 @@ cid.base;    // remembers source base (if CIDv1) => undefined
 cid.codec;   // uvarint, eg. always 0x70 for CIDv0
 cid.hash;
 // Multihash {
-//   code: number,
-//   hash: Uint8Array() [ ... ]
+//   codec: number,
+//   data: Uint8Array() [ ... ]
 // }
 cid.bytes; // encoded bytes => Uint8Array(34) [ ... ]
 cid.toString(); // provided base is ignored

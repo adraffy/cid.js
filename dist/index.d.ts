@@ -29,9 +29,9 @@ export class Multibase {
 
 export class Multihash {
 	static from(v: string|BytesLike): Multihash;
-	code: number;
-	hash: Uint8Array;
-	constructor(code: number, hash: Uint8Array);
+	codec: number;
+	data: Uint8Array;
+	constructor(codec: number, data: Uint8Array);
 	get bytes(): Uint8Array;
 	write(v: Uint8Array, pos?: number): number;
 }
