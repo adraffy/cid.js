@@ -4,7 +4,7 @@
 * [`7KB`](./dist/index.min.js) **Default** — full library
 
 ```js
-import {CID, Multibase} from '@adraffy/cid.js'; // or require()
+import {CID, Multibase} from '@adraffy/cid'; // or require()
 // npm i @adraffy/cid
 // browser: https://cdn.jsdelivr.net/npm/@adraffy/cid@latest/dist/index.min.js
 
@@ -45,9 +45,9 @@ import {
   Base2, Base8, Base16, Base32, Base32Hex, Base32Z, Base64, Base64URL, // RFC4648
   Base10, Base36, Base58BTC, Base58Flickr, // Prefix0
   Bech32,
-} from '@adraffy/cid.js';
+} from '@adraffy/cid';
 
-let bech = Bech32.decode('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
+let bech = Bech32.from('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
 bech.hrp;  // string, human-readable part, eg. "bc"
 bech.type; // number: 1, Bech32.M, etc. (note: this is the checksum)
 bech.v32;  // array of base32 numbers
@@ -55,7 +55,7 @@ bech.v32;  // array of base32 numbers
 
 Arbitrary-precision [uvarint](./src/uvarint.js):
 ```js
-import {uvarint} from '@adraffy/cid.js'; // also: dist/uvarint.min.js
+import {uvarint} from '@adraffy/cid'; // also: dist/uvarint.min.js
 
 let v = []; // output buffer (Array or Uint8Array)
 let p = 0; // write position
