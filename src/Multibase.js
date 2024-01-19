@@ -1,4 +1,5 @@
-export const BASES = new Map();
+const MAP = new Map();
+const BASES = new Set();
 
 export class Multibase {
 	static [Symbol.iterator]() {
@@ -16,17 +17,23 @@ export class Multibase {
 	}
 	static for(prefix) {
 		if (prefix instanceof this) return prefix;
-		let mb = BASES.get(prefix);
+		let mb = MAP.get(prefix);
 		if (!mb) throw new Error(`unknown multibase: ${prefix}`);
 		return mb;
 	}
 	constructor(prefix, name) {
-		if (typeof prefix !== 'string' || prefix.length !== 1) throw new TypeError('invalid prefix');
+		if (prefix.length !== 1) throw new Error('invalid prefix');
 		this.prefix = prefix;
 		this.name = name;
-		BASES.set(prefix, this); // allow replacement
+		// register names, allow replacement
+		MAP.set(prefix, this); 
+		MAP.set(name, this);
+		BASES.add(this);
 	}
 	encodeWithPrefix(v) {
 		return this.prefix + this.encode(v);
 	}
+	// abstract:
+	// encode(v): s
+	// decode(s): v
 }

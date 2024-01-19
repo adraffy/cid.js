@@ -1,43 +1,42 @@
 //https://github.com/multiformats/unsigned-varint
 
+// read n arbitrary-sized uvarints from v at pos and applies fn to them
+function _read(v, pos = 0, n = 1, fn) {
+	let ret = [];
+	for (let i = 0; i < n; i++) {
+		let bits = 0, temp = 0, bytes = [];
+		const mask = 127;
+		while (true) {
+			if (pos >= v.length) throw new RangeError('buffer overflow');
+			let next = v[pos++];
+			temp |= (next & mask) << bits;
+			bits += 7;
+			if (bits >= 8) {
+				bytes.push(temp & 255);
+				temp >>= 8;
+				bits -= 8;
+			}
+			if (next <= mask) break;
+		}
+		if (bits) bytes.push(temp);
+		ret.push(fn(bytes.reverse()));
+	}
+	ret.push(pos);
+	return ret;
+}
+
 function hex(v) {
 	return '0x' + v.map(x => x.toString(16).padStart(2, '0')).join('');
 }
+function int(v) {
+	let i = v.reduce((a, x) => a * 256 + x, 0);
+	if (!Number.isSafeInteger(i)) throw new RangeError('unsafe');
+	return i;
+}
 
-// read arbitrary-sized uvarint from v at pos
-// returns number[]
-export function readBytes(v, pos = 0) {
-	let bits = 0, temp = 0, bytes = [];
-	const mask = 127;
-	while (true) {
-		if (pos >= v.length) throw new RangeError('buffer overflow');
-		let next = v[pos++];
-		temp |= (next & mask) << bits;
-		bits += 7;
-		if (bits >= 8) {
-			bytes.push(temp & 255);
-			temp >>= 8;
-			bits -= 8;
-		}
-		if (next <= mask) break;
-	}
-	if (bits) bytes.push(temp);
-	return [bytes.reverse(), pos];
-}
-export function readHex(v, p) {
-	[v, p] = readBytes(v, p);
-	return [hex(v), p];
-}
-export function readBigInt(v, p) {
-	[v, p] = readBytes(v, p);
-	return [BigInt(hex(v)), p];
-}
-export function read(v, p) {
-	[v, p] = readBytes(v, p);
-	let u = parseInt(hex(v));
-	if (!Number.isSafeInteger(u)) throw new RangeError('unsafe');
-	return [u, p];
-}
+export function readBigInt(v, p, n) { return _read(v, p, n, x => BigInt(hex(x))); }
+export function readHex(v, p, n)    { return _read(v, p, n, hex); }
+export function read(v, p, n)       { return _read(v, p, n, int); }
 
 // write a uvarint of u into ArrayLike at pos
 // returns new position

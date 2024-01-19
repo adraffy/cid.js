@@ -1,43 +1,42 @@
 //https://github.com/multiformats/unsigned-varint
 
+// read n arbitrary-sized uvarints from v at pos and applies fn to them
+function _read(v, pos = 0, n = 1, fn) {
+	let ret = [];
+	for (let i = 0; i < n; i++) {
+		let bits = 0, temp = 0, bytes = [];
+		const mask = 127;
+		while (true) {
+			if (pos >= v.length) throw new RangeError('buffer overflow');
+			let next = v[pos++];
+			temp |= (next & mask) << bits;
+			bits += 7;
+			if (bits >= 8) {
+				bytes.push(temp & 255);
+				temp >>= 8;
+				bits -= 8;
+			}
+			if (next <= mask) break;
+		}
+		if (bits) bytes.push(temp);
+		ret.push(fn(bytes.reverse()));
+	}
+	ret.push(pos);
+	return ret;
+}
+
 function hex(v) {
 	return '0x' + v.map(x => x.toString(16).padStart(2, '0')).join('');
 }
+function int(v) {
+	let i = v.reduce((a, x) => a * 256 + x, 0);
+	if (!Number.isSafeInteger(i)) throw new RangeError('unsafe');
+	return i;
+}
 
-// read arbitrary-sized uvarint from v at pos
-// returns number[]
-function readBytes(v, pos = 0) {
-	let bits = 0, temp = 0, bytes = [];
-	const mask = 127;
-	while (true) {
-		if (pos >= v.length) throw new RangeError('buffer overflow');
-		let next = v[pos++];
-		temp |= (next & mask) << bits;
-		bits += 7;
-		if (bits >= 8) {
-			bytes.push(temp & 255);
-			temp >>= 8;
-			bits -= 8;
-		}
-		if (next <= mask) break;
-	}
-	if (bits) bytes.push(temp);
-	return [bytes.reverse(), pos];
-}
-function readHex(v, p) {
-	[v, p] = readBytes(v, p);
-	return [hex(v), p];
-}
-function readBigInt(v, p) {
-	[v, p] = readBytes(v, p);
-	return [BigInt(hex(v)), p];
-}
-function read(v, p) {
-	[v, p] = readBytes(v, p);
-	let u = parseInt(hex(v));
-	if (!Number.isSafeInteger(u)) throw new RangeError('unsafe');
-	return [u, p];
-}
+function readBigInt(v, p, n) { return _read(v, p, n, x => BigInt(hex(x))); }
+function readHex(v, p, n)    { return _read(v, p, n, hex); }
+function read(v, p, n)       { return _read(v, p, n, int); }
 
 // write a uvarint of u into ArrayLike at pos
 // returns new position
@@ -65,7 +64,6 @@ var uvarint = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	read: read,
 	readBigInt: readBigInt,
-	readBytes: readBytes,
 	readHex: readHex,
 	write: write
 });
@@ -256,7 +254,8 @@ Object.defineProperty(Bech32, 'M', {
 	configurable: false,
 });
 
-const BASES = new Map();
+const MAP = new Map();
+const BASES = new Set();
 
 class Multibase {
 	static [Symbol.iterator]() {
@@ -274,19 +273,25 @@ class Multibase {
 	}
 	static for(prefix) {
 		if (prefix instanceof this) return prefix;
-		let mb = BASES.get(prefix);
+		let mb = MAP.get(prefix);
 		if (!mb) throw new Error(`unknown multibase: ${prefix}`);
 		return mb;
 	}
 	constructor(prefix, name) {
-		if (typeof prefix !== 'string' || prefix.length !== 1) throw new TypeError('invalid prefix');
+		if (prefix.length !== 1) throw new Error('invalid prefix');
 		this.prefix = prefix;
 		this.name = name;
-		BASES.set(prefix, this); // allow replacement
+		// register names, allow replacement
+		MAP.set(prefix, this); 
+		MAP.set(name, this);
+		BASES.add(this);
 	}
 	encodeWithPrefix(v) {
 		return this.prefix + this.encode(v);
 	}
+	// abstract:
+	// encode(v): s
+	// decode(s): v
 }
 
 class Multihash {
@@ -305,10 +310,10 @@ class Multihash {
 	}
 	get bytes() {
 		let v = [];
-		this.write(v, 0);
+		this.write(v);
 		return Uint8Array.from(v);
 	}
-	write(v, pos) {
+	write(v, pos = 0) {
 		let {data, codec} = this;
 		pos = write(v, data.length, write(v, codec, pos));
 		data.forEach(x => v[pos++] = x);
@@ -437,65 +442,53 @@ class CID {
 	static from(v) {
 		let base; // remember source base (if string)
 		if (typeof v === 'string') {
-			if (v.length == 46 && v.startsWith('Qm')) { // CIDv0
+			if (v.length == 46 && v.startsWith('Qm')) { // version = 0
 				v = Base58BTC.decode(v);
-			} else { // CIDv1+
+			} else {
 				({base, data: v} = Multibase.decode(v));
 				if (v[0] == SHA2_256) throw new Error('CIDv0 cannot be multibase');
 			}
 		}
 		try {
-			if (v[0] == SHA2_256) {
-				if (v[1] !== 32) throw new Error('CIDv0 must be SHA2-256'); // expect 32 byte hash
-				return new CIDv0(Multihash.from(v));
+			let [version, codec, pos] = read(v, 0, 2);
+			if (version == SHA2_256) {
+				let hash = Multihash.from(v);
+				if (hash.data.length != 32) throw new Error('CIDv0 must be 32-bytes'); 
+				return new CID(0, 0x70, hash);
 			}
-			let [version, pos] = read(v);
-			switch (version) {
-				case 1: {
-					let codec;
-					[codec, pos] = read(v, pos);
-					return new CIDv1(codec, Multihash.from(v.slice(pos)), base);
-				}
-				default: throw new Error(`unsupported version: ${version}`);
-			}
+			return new CID(version, codec, Multihash.from(v.slice(pos)), base);
 		} catch (err) {
-			throw new Error(`Malformed CID: ${err.message}`);
+			throw new Error(`malformed CID: ${err.message}`);
 		}
 	}
-	//get isCID() { return true; }
-	upgrade() { return this; }
-}
-
-class CIDv0 extends CID {
-	constructor(hash) {
-		super();
-		this.hash = hash;
-	}
-	get version() { return 0; }
-	get codec() { return 0x70; }
-	get bytes() { return this.hash.bytes; }
-	upgrade() { return new CIDv1(this.codec, this.hash); }
-	toString() { 
-		return Base58BTC.encode(this.bytes); // only
-	}
-}
-
-class CIDv1 extends CID {
-	constructor(codec, hash, base) {
-		super();
+	constructor(version, codec, hash, base) {
+		this.version = version;
 		this.codec = codec;
 		this.hash = hash;
 		this.base = base;
 	}
-	get version() { return 1; }
 	get bytes() {
-		let v = [];
-		this.hash.write(v, write(v, this.codec, write(v, this.version)));
-		return Uint8Array.from(v);
+		let {version, codec, hash} = this;
+		if (version) {
+			let v = [];
+			hash.write(v, write(v, codec, write(v, version)));
+			return Uint8Array.from(v);
+		} else {
+			return hash.bytes;
+		}
 	}
-	toString(base) {
-		return Multibase.for(base || this.base || 'b').encodeWithPrefix(this.bytes);
+	upgrade() {
+		let {version, codec, hash, base} = this;
+		return new CID(version || 1, codec, hash, base);
+	}
+	toString(alt_base) {
+		let {version, base, bytes} = this;
+		if (version) {
+			return Multibase.for(alt_base || base || 'k').encodeWithPrefix(bytes);
+		} else {
+			return Base58BTC.encode(bytes); // alt_base ignored
+		}
 	}
 }
 
-export { Base10, Base16, Base2, Base32, Base32Hex, Base32Z, Base36, Base58BTC, Base58Flickr, Base64, Base64URL, Base8, Bech32, CID, CIDv0, CIDv1, Multibase, Multibased, Multihash, Prefix0, RFC4648, convert, uvarint };
+export { Base10, Base16, Base2, Base32, Base32Hex, Base32Z, Base36, Base58BTC, Base58Flickr, Base64, Base64URL, Base8, Bech32, CID, Multibase, Multibased, Multihash, Prefix0, RFC4648, convert, uvarint };

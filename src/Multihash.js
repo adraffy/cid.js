@@ -17,10 +17,10 @@ export class Multihash {
 	}
 	get bytes() {
 		let v = [];
-		this.write(v, 0);
+		this.write(v);
 		return Uint8Array.from(v);
 	}
-	write(v, pos) {
+	write(v, pos = 0) {
 		let {data, codec} = this;
 		pos = write(v, data.length, write(v, codec, pos));
 		data.forEach(x => v[pos++] = x);

@@ -64,6 +64,8 @@ export class Multibased extends Multibase {
 }
 
 // https://github.com/multiformats/multibase#multibase-table
+// https://w3c-ccg.github.io/multibase/
+
 new Multibased('0', 'base2', Base2);
 new Multibased('7', 'base8', Base8);
 new Multibased('9', 'base10', Base10);
@@ -86,6 +88,10 @@ new Multibased('m', 'base64', Base64);
 new Multibased('M', 'base64pad', Base64, {padding: true});
 new Multibased('u', 'base64url', Base64URL);
 new Multibased('U', 'base64urlpad', Base64URL, {padding: true});
+
+// note: there is no reason to implement the identity base since the string form cannot be safely represented.
+
+// U+0000,     NUL,        none,               (No base encoding),
 // U+0070,     p,          proquint,           Proquint (https://arxiv.org/html/0901.4016)
 // U+1F680,    🚀,         base256emoji,       base256 with custom alphabet using variable-sized-codepoints
 

@@ -12,10 +12,13 @@ console.log(cid.toString());
 let cid1 = cid.upgrade();
 console.log(cid1);
 console.log(cid1.toString());
-console.log(cid1.toString('k'));
+console.log(cid1.toString('b'));
 console.log(cid1.toString(Multibase.for('z')));
+console.log(cid1.toString(Multibase.for('base36upper')));
 
-console.log('=== Multibase === ');
+console.log([...Multibase]);
+
+console.log('=== Bases === ');
 
 let enc = Base58BTC.encode([1, 2, 255]).toString();
 console.log(enc);
@@ -33,13 +36,12 @@ let v = [], p = 0;
 p = uvarint.write(v, 69, p);
 p = uvarint.write(v, '0x420', p);
 p = uvarint.write(v, 1337n, p);
-p = 0;
 let u;
-[u, p] = uvarint.readHex(v, p); // "0x45" == 69
+[u, p] = uvarint.readHex(v, 0); 
 console.log(u);
-[u, p] = uvarint.read(v, p); // 1056 === 0x420
+[u, p] = uvarint.readBigInt(v, p); 
 console.log(u);
-[u] = uvarint.readBigInt(v, p); // 1337n
+[u, p] = uvarint.read(v, p); 
 console.log(u);
-[u] = uvarint.readBytes(v, p); // [5, 57] = 5*256+57 = 1337
-console.log(u);
+let us = uvarint.read(v, 0, 3);
+console.log(us);

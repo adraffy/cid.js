@@ -1,7 +1,8 @@
 # cid.js
-0-dependancy [Multiformat CID](https://github.com/multiformats/cid/blob/master/README.md) and related coders.
+0-dependancy [Multiformat CID](https://github.com/multiformats/cid/blob/master/README.md) with related bases and coders.
 
 * [`7KB`](./dist/index.min.js) **Default** — full library
+* [`800B`](./dist/uvarint.min.js) — just [uvarint.js](./src/uvarint.js)
 
 ```js
 import {CID, Multibase} from '@adraffy/cid'; // or require()
@@ -9,34 +10,36 @@ import {CID, Multibase} from '@adraffy/cid'; // or require()
 // browser: https://cdn.jsdelivr.net/npm/@adraffy/cid@latest/dist/index.min.js
 
 let cid = CID.from('QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5');
-// CIDv0 {
-//   hash: Multihash { ... }
+// CID {
+//   version: number,
+//   codec: number,
+//   hash: Multihash { ... },
+//   base?: Multibase { ... }
 // }
-cid.version; // uvarint: 0, 1
-cid.base;    // remembers source base (if CIDv1) => undefined
-cid.codec;   // uvarint, eg. always 0x70 for CIDv0
+cid.version; // 0
+cid.codec;   // 0x70 (since version = 0)
+cid.base;    // remembers source base if possible
 cid.hash;
 // Multihash {
 //   codec: number,
 //   data: Uint8Array() [ ... ]
 // }
 cid.bytes; // encoded bytes => Uint8Array(34) [ ... ]
-cid.toString(); // provided base is ignored
+cid.toString();
 // "QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5"
 
-
-let cid1 = cid.upgrade(); // noop if CIDv1
-// CIDv1 {
-//   codec: number,
-//   hash: Multihash { ... },
-//   base?: Multibase { ... }
-// }
-cid1.toString(); // default base is "b" => base32
-// "bafybeia2ixqr5fda7cw5vem65xtirm6puhde3vrehkv4zqxxicwc6gbmuq"
-cid1.toString('k'); // use different base by prefix ("k" => base36)
+let cid1 = cid.upgrade(); // noop if version > 0
+cid1.toString(); // default base is "k" => base36
 // "k2jmtxs0omsxbtzexbx41py6k7akdtllisuuumrorlmyo2tixbx59rj8"
-cid1.toString(Multibase.for('z')); // use different base ("z" => base58btc)
-// zdj7WXCTUquTeArWZZbaegbyYuz8mujpBZJkCQsfcvE458QR1
+cid1.toString('b'); // use different base, by prefix (base32)
+// "bafybeia2ixqr5fda7cw5vem65xtirm6puhde3vrehkv4zqxxicwc6gbmuq" 
+cid1.toString(Multibase.for('z')); // provide Multibase, by prefix (base58btc)
+// "zdj7WXCTUquTeArWZZbaegbyYuz8mujpBZJkCQsfcvE458QR1" 
+cid2.toString(Multibase.for('base36upper')); // by name
+// "K2JMTXS0OMSXBTZEXBX41PY6K7AKDTLLISUUUMRORLMYO2TIXBX59RJ8" 
+
+// list of registered multibases
+[...Multibase]; // Iterable<Multibase>
 ```
 
 Available [bases](./src/bases.js#L60) / coders:
@@ -47,7 +50,7 @@ import {
   Bech32,
 } from '@adraffy/cid';
 
-// all bases have encode/decode API
+// all raw bases have encode/decode API
 Base58BTC.encode([1, 2, 255]); // "LiA"
 Base58BTC.decode('LiA'); // [1, 2, 255]
 
@@ -66,12 +69,12 @@ let p = 0; // write position
 p = uvarint.write(v, 69, p);      // Number
 p = uvarint.write(v, '0x420', p); // HexString
 p = uvarint.write(v, 1337n, p);   // BigInt
-p = 0; // reset position
-let u; // read written values:
-[u, p] = uvarint.readHex(v, p); // "0x45" == 69
-[u, p] = uvarint.read(v, p);    //   1056 == 0x420
-[u] = uvarint.readBigInt(v, p); // 1337n
-[u] = uvarint.readBytes(v, p);  // [5, 57] = 5*256+57 = 1337
+let u;
+[u, p] = uvarint.readHex(v, 0);    // "0x45" => 69
+[u, p] = uvarint.readBigInt(v, p); //  1056n => 0x420
+[u, p] = uvarint.read(v, p);       //   1337
+let [u0, u1, u2] = uvarint.read(v, 0, 3); // read 3 uvarints at 0
+// [69, 1056, 1337]
 ```
 
 ### Build
