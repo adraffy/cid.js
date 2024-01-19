@@ -2,7 +2,7 @@
 0-dependancy [Multiformat CID](https://github.com/multiformats/cid/blob/master/README.md) with related bases and coders.
 
 * [`7KB`](./dist/index.min.js) **Default** — full library
-* [`800B`](./dist/uvarint.min.js) — just [uvarint.js](./src/uvarint.js)
+* [`1KB`](./dist/uvarint.min.js) — just [uvarint.js](./src/uvarint.js)
 
 ```js
 import {CID, Multibase} from '@adraffy/cid'; // or require()
@@ -66,9 +66,9 @@ import {uvarint} from '@adraffy/cid'; // also: dist/uvarint.min.js
 
 let v = []; // output buffer (Array or Uint8Array)
 let p = 0; // write position
-p = uvarint.write(v, 69, p);      // Number
-p = uvarint.write(v, '0x420', p); // HexString
-p = uvarint.write(v, 1337n, p);   // BigInt
+p = uvarint.write(v, 69, p);       // Number
+p = uvarint.write(v, '0x420', p);  // HexString
+p = uvarint.write(v, 1337n, p);    // BigInt
 let u;
 [u, p] = uvarint.readHex(v, 0);    // "0x45" => 69
 [u, p] = uvarint.readBigInt(v, p); //  1056n => 0x420
