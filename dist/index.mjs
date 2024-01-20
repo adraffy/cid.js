@@ -442,7 +442,13 @@ new Multibased('U', 'base64urlpad', Base64URL, {padding: true});
 // "NOTE: Multibase-prefixes are encoding agnostic. "z" is "z", not 0x7a ("z" encoded as ASCII/UTF-8).
 //  In UTF-32, for example, that same "z" would be [0x7a, 0x00, 0x00, 0x00] not [0x7a]."
 
-const SHA2_256 = 0x12;
+// https://github.com/multiformats/cid/blob/master/README.md#cidv0
+// * the multibase of the string representation is always base58btc and implicit (not written)
+// * the multicodec is always dag-pb and implicit (not written)
+// * the cid-version is always cidv0 and implicit (not written)
+// * the multihash is written as is but is always a full (length 32) sha256 hash.
+const CODEC_SHA2_256 = 0x12;
+const CODEC_DAG_PB = 0x70;
 
 class CID {	
 	static from(v) {
@@ -452,17 +458,19 @@ class CID {
 				v = Base58BTC.decode(v);
 			} else {
 				({base, data: v} = Multibase.decode(v));
-				if (v[0] == SHA2_256) throw new Error('CIDv0 cannot be multibase');
+				if (v[0] == CODEC_SHA2_256) throw new Error('CIDv0 cannot be multibase');
 			}
 		}
 		try {
 			let [version, codec, pos] = read(v, 0, 2);
-			if (version == SHA2_256) {
+			if (version == CODEC_SHA2_256) {
 				let hash = Multihash.from(v);
 				if (hash.data.length != 32) throw new Error('CIDv0 must be 32-bytes'); 
-				return new CID(0, 0x70, hash);
+				return new this(0, CODEC_DAG_PB, hash);
 			}
-			return new CID(version, codec, Multihash.from(v.slice(pos)), base);
+			// the spec says: 1 is valid, 2 and 3 are reserved, rest (0 and 3+) are malformed
+			//if (!version || version > 3) throw new Error(`invalid version: ${version}`);
+			return new this(version, codec, Multihash.from(v.slice(pos)), base);
 		} catch (err) {
 			throw new Error(`malformed CID: ${err.message}`);
 		}
