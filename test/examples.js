@@ -12,11 +12,11 @@ console.log(cid.toString());
 let cid1 = cid.upgrade();
 console.log(cid1);
 console.log(cid1.toString());
-console.log(cid1.toString('b'));
-console.log(cid1.toString(Multibase.for('z')));
-console.log(cid1.toString(Multibase.for('base36upper')));
+console.log(cid1.toString('z'));
+console.log(cid1.toString(Multibase.for('b')));
+console.log(cid1.toString(Multibase.for('base32upper')));
 
-console.log([...Multibase]);
+dump_cols([...Multibase].map(x => `${x.prefix}:${x.name}`), 4);
 
 console.log('=== Bases === ');
 
@@ -45,3 +45,13 @@ console.log(u);
 console.log(u);
 let us = uvarint.read(v, 0, 3);
 console.log(us);
+
+function dump_cols(v, cols) {
+	v = v.map(x => x + ',');
+	let w = v.reduce((a, x) => Math.max(a, x.length), 0);
+	console.log('[');
+	for (let i = 0; i < v.length; ) {
+		console.log('  ' + v.slice(i, i += cols).map(x => x.padEnd(w)).join(' '));
+	}
+	console.log(']');
+}

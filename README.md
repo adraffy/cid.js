@@ -31,15 +31,24 @@ cid.toString();
 let cid1 = cid.upgrade(); // noop if version > 0
 cid1.toString(); // default base is "k" => base36
 // "k2jmtxs0omsxbtzexbx41py6k7akdtllisuuumrorlmyo2tixbx59rj8"
-cid1.toString('b'); // use different base, by prefix (base32)
-// "bafybeia2ixqr5fda7cw5vem65xtirm6puhde3vrehkv4zqxxicwc6gbmuq" 
-cid1.toString(Multibase.for('z')); // provide Multibase, by prefix (base58btc)
+cid1.toString('z'); // use different base, by prefix (base58btc)
 // "zdj7WXCTUquTeArWZZbaegbyYuz8mujpBZJkCQsfcvE458QR1" 
-cid2.toString(Multibase.for('base36upper')); // by name
-// "K2JMTXS0OMSXBTZEXBX41PY6K7AKDTLLISUUUMRORLMYO2TIXBX59RJ8" 
+cid1.toString(Multibase.for('b')); // provide Multibase, by prefix (base32)
+// "bafybeia2ixqr5fda7cw5vem65xtirm6puhde3vrehkv4zqxxicwc6gbmuq" 
+cid2.toString(Multibase.for('base32upper')); // by name
+// "BAFYBEIA2IXQR5FDA7CW5VEM65XTIRM6PUHDE3VREHKV4ZQXXICWC6GBMUQ" 
 
 // list of registered multibases
-[...Multibase]; // Iterable<Multibase>
+// auto-registers during Multibase() constructor
+[...Multibase].map(x => `${x.prefix}:${name}`); // Iterable<Multibase>
+// [
+//   0:base2,             7:base8,             9:base10,            f:base16,
+//   F:base16upper,       v:base32hex,         V:base32hexupper,    t:base32hexpad,
+//   T:base32hexpadupper, b:base32,            B:base32upper,       c:base32pad,
+//   C:base32padupper,    h:base32z,           k:base36,            K:base36upper,
+//   z:base58btc,         Z:base58flickr,      m:base64,            M:base64pad,
+//   u:base64url,         U:base64urlpad,
+// ]
 ```
 
 Available [bases](./src/bases.js#L60) / coders:
