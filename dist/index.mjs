@@ -88,7 +88,7 @@ class CharTable {
 	}
 }
 
-const PAD = '=';
+const PAD = '='; // currently global
 
 class RFC4648 {
 	constructor(s) { // must be power of 2
@@ -104,6 +104,8 @@ class RFC4648 {
 		let pos = 0;
 		let carry = 0;
 		let width = 0;
+		// opinion: there is no need to fail when padding 
+		// is present when it wasn't allowed or needed
 		while (n && s[n-1] == PAD) --n; // remove padding
 		let v = new Uint8Array((n * bits) >> 3);
 		for (let i = 0; i < n; i++) {
@@ -131,7 +133,7 @@ class RFC4648 {
 			}
 		}
 		if (width) u.push((carry << (bits - width)) & mask); // left align remainder
-		while (pad && (u.length * bits) & 7) u.push(mask + 1);
+		while (pad && (u.length * bits) & 7) u.push(mask + 1); // add padding
 		return table.encode(u);
 	}
 }

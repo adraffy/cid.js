@@ -10,6 +10,7 @@
 		"uvarint",
 		"Base64",
 		"Base58",
+		"Base36",
 		"Base32",
 		"Bech32"
 	],

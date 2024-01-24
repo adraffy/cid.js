@@ -3,7 +3,7 @@ import {read, readBigInt, write} from '../src/uvarint.js';
 
 test('uvarint/Number', () => {
 	for (let i = 0; i < 10000; i++) {
-		let u0 = rng(Number.MAX_SAFE_INTEGER-1);
+		let u0 = rng(Number.MAX_SAFE_INTEGER+1);
 		let v = [];
 		write(v, u0);
 		let [u1] = read(v);

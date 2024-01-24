@@ -1,6 +1,6 @@
-import {CID, Multibase, Bech32, Base58BTC, uvarint} from '../src/index.js';
+import {CID, Multibase, Bech32, Base2, Base58BTC, uvarint} from '../src/index.js';
 
-console.log('==== CID ====');
+console.log('=== CID ===');
 
 let cid = CID.from('QmQ7D7QqcAhFdrFfquiz7B5RWZiJ6e9Ast1LzpXZEdZWF5');
 
@@ -16,21 +16,29 @@ console.log(cid1.toString('z'));
 console.log(cid1.toString(Multibase.for('b')));
 console.log(cid1.toString(Multibase.for('base32upper')));
 
-dump_cols([...Multibase].map(x => `${x.prefix}:${x.name}`), 4);
-
 console.log('=== Bases === ');
 
-let enc = Base58BTC.encode([1, 2, 255]).toString();
-console.log(enc);
-console.log(Base58BTC.decode(enc));
+dump_cols([...Multibase].map(x => `${x.prefix}:${x.name}`), 3);
 
-console.log('=== Bech32 ====');
+console.log('=== Coders === ');
+
+test_coder(Base2, [0b10000001]);
+test_coder(Base58BTC, [1, 2, 255]);
+
+function test_coder(coder, input) {
+	let enc = coder.encode(input).toString();
+	console.log(coder.constructor.name);
+	console.log(enc);
+	console.log(coder.decode(enc));
+}
+
+console.log('=== Bech32 ===');
 
 let bech = Bech32.decode('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
 let {hrp, type, v32} = bech;
 console.log({hrp, type, v32});
 
-console.log('=== uvarint ====');
+console.log('=== uvarint ===');
 
 let v = [], p = 0;
 p = uvarint.write(v, 69, p);
