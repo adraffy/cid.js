@@ -22,7 +22,7 @@ dump_cols([...Multibase].map(x => `${x.prefix}:${x.name}`), 3);
 
 console.log('=== Coders === ');
 
-test_coder(Base2, [0b10000001]);
+test_coder(Base2, [128+1]);
 test_coder(Base58BTC, [1, 2, 255]);
 
 function test_coder(coder, input) {

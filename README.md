@@ -63,8 +63,8 @@ import {
   Bech32,
 } from '@adraffy/cid';
 
-Base2.encode([0b10000001]); // "10000001"
-Base2.decode('10000001');   // 129 (128+1)
+Base2.encode([128+1]);    // "10000001"
+Base2.decode('10000001'); // 129
 
 Base58BTC.encode([1, 2, 255]); // "LiA"
 Base58BTC.decode('LiA');       // [1, 2, 255]
