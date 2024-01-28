@@ -4,9 +4,7 @@ import {Multibase} from './Multibase.js';
 export class Multihash {
 	static from(v) {
 		if (typeof v === 'string') v = Multibase.decode(v);
-		let [codec, pos] = read(v);
-		let size;
-		[size, pos] = read(v, pos);
+		let [codec, size, pos] = read(v, 0, 2);
 		v = new Uint8Array(v.slice(pos));
 		if (v.length !== size) throw new Error(`expected ${size}, got ${v.length} bytes`);
 		return new this(codec, v);
