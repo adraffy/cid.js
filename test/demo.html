@@ -53,8 +53,10 @@ h1 {
 #examples button {
 	padding: 3px 6px;
 }
+#input {	
+	margin: 10px 0;
+}
 #input input {
-	margin-top: 8px;
 	box-sizing: border-box;
 	width: 100%;
 	padding: 8px;
@@ -281,7 +283,7 @@ for (let btn of document.querySelectorAll('[data-input]')) {
 	});
 }
 
-document.querySelector('#protocols').innerText = [...PROTOCOL_MAP.keys()].map(x => x.slice(0, -1)).join('|');
+document.querySelector('#protocols').innerText = [...PROTOCOL_MAP.keys()].join('|');
 input_field.addEventListener('input', update);
 update();
 window.addEventListener('hashchange', e => {
@@ -341,17 +343,17 @@ function update_ens(input) {
 		let protocol = input.slice(0, pos);
 		let specs = PROTOCOL_MAP.get(protocol);
 		if (!specs) throw new Error(`Unknown protocol: "${protocol}"`);		
-		input = input.slice(pos + P_SEP.length);
+		let rest = input.slice(pos + P_SEP.length);
 		for (let x of specs) {
 			try {
 				switch (x.type) {
 					case 'cid': {
-						rep = CID.from(input);
+						rep = CID.from(rest);
 						data = rep.bytes;
 						break;
 					}
 					case 'coder': {
-						data = x.coder.decode(input);
+						data = x.coder.decode(rest);
 						x.validate(data);
 						rep = x.coder.encode(data);
 						break;
@@ -373,7 +375,7 @@ function update_ens(input) {
 		throw new Error('unknown format');
 	}
 	output_div.innerHTML = '';
-	output_div.append(create_kind_row(spec));
+	output_div.append(create_spec_row(spec));
 	if (error) {
 		output_div.append(create_row('Error', create('span', {className: ['tag', 'error'], innerText: `⚠️ ${error.message}`})));
 	} else {
@@ -383,7 +385,7 @@ function update_ens(input) {
 
 		let contenthash = hex_from_bytes(make_contenthash(spec.codec, data));
 		let contenthash_row = create_row('Contenthash', create('code', {className: 'long', innerText: contenthash}));
-		if (input == contenthash) {
+		if (input === contenthash) {
 			contenthash_row.append(create('span', {className: ['tag', 'good'], innerText: 'Same as Input'}));
 		} else {
 			contenthash_row.append(create('button', {
@@ -437,13 +439,13 @@ function update_ens(input) {
 }
 
 
-function create_kind_row(spec) {
-	let row = create_row('Kind');
+function create_spec_row(spec) {
+	let row = create_row('Protocol');
 	row.append(create(create_link(spec.www), {className: 'spec', innerText: spec.name}));	
 	if (spec.version) {
 		row.append(create('span', {className: ['tag', 'version'], innerText: spec.version}))
 	}
-	row.append(create('span', {className: ['tag', 'protocol'], innerText: `Protocol: ${format_dec_hex(spec.codec)}`}));
+	row.append(create('span', {className: ['tag', 'protocol'], innerText: `Codec: ${format_dec_hex(spec.codec)}`}));
 	if (spec.deprecated) {
 		let innerText = '⚠️ Deprecated';
 		if (typeof spec.deprecated === 'string') {
