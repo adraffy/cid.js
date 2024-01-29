@@ -155,7 +155,7 @@ footer {
 </header>
 <div id="examples">
 	<button data-input="0xe301017012203ae00318ae91bb0c41808a2e755d10137e5da5f441a8dc0c70ed791b4cb933f0">IPFS (v1)</button>
-	<button data-input="ipfs://QmZcH4YvBVVRJtdn4RdbaqgspFU8gH6P9vomDpBVpAL3u4/1337">IPFS (v0)</button>
+	<button data-input="ipfs://QmZcH4YvBVVRJtdn4RdbaqgspFU8gH6P9vomDpBVpAL3u4">IPFS (v0)</button>
 	<button data-input="0xe5010172002408011220066e20f72cc583d769bc8df5fedff24942b3b8941e827f023d306bdc7aecf5ac">IPNS</button>
 	<button data-input="arweave://yBYkngZXGCQgYU-nUCwo5vns2ALUU0LXXZrCUlUUWkk">Arweave</button>
 	<button data-input="onion://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid">Onion (v3)</button>
@@ -188,7 +188,7 @@ const readme_dom = [...output_div.childNodes];
 const SPECS = [
 	{
 		codec: 0xE3,
-		protocol: 'ipfs:',
+		protocol: 'ipfs',
 		name: 'IPFS',
 		www: 'https://docs.ipfs.tech/concepts/ipfs-gateway/',
 		type: 'cid',
@@ -196,7 +196,7 @@ const SPECS = [
 	},	
 	{
 		codec: 0xE5,
-		protocol: 'ipns:',
+		protocol: 'ipns',
 		name: 'IPNS',
 		www: 'https://docs.ipfs.tech/concepts/ipns/',
 		type: 'cid',
@@ -204,7 +204,7 @@ const SPECS = [
 	},
 	{
 		codec: 0xE4,
-		protocol: 'bzz:',
+		protocol: 'bzz',
 		name: 'Swarm',
 		www: 'https://docs.ethswarm.org/docs/develop/access-the-swarm/upload-and-download',
 		type: 'cid',
@@ -212,7 +212,7 @@ const SPECS = [
 	},
 	{
 		codec: 0x1BC,
-		protocol: 'onion:',
+		protocol: 'onion',
 		name: 'Onion',
 		deprecated: 'https://support.torproject.org/onionservices/v2-deprecation/',
 		www: 'https://www.tor2web.org/',
@@ -225,7 +225,7 @@ const SPECS = [
 	},
 	{
 		codec: 0x1BD,
-		protocol: 'onion:',
+		protocol: 'onion',
 		name: 'Onion',
 		version: 'v3',
 		www: 'https://www.tor2web.org/',
@@ -238,7 +238,7 @@ const SPECS = [
 	},
 	{
 		codec: 0xB29910,
-		protocol: 'arweave:',
+		protocol: 'arweave',
 		name: 'Arweave',
 		www: 'https://docs.arweave.org/developers/arweave-node-server/http-api',
 		type: 'coder',
@@ -304,6 +304,7 @@ function update() {
 }
 
 function update_ens(input) {
+	const P_SEP = '://';
 	let spec, rep, data, error;
 	if (is_hex(input)) {
 		let v = bytes_from_hex(input);
@@ -327,20 +328,22 @@ function update_ens(input) {
 		} catch (err) {
 			error = err;
 		}
-	} else if (input.includes('://')) {
-		let url = new URL(input);
-		let specs = PROTOCOL_MAP.get(url.protocol);
-		if (!specs) throw new Error(`Unknown protocol: "${url.protocol}"`);		
+	} else if (input.includes(P_SEP)) {
+		let pos = input.indexOf(P_SEP);
+		let protocol = input.slice(0, pos);
+		let specs = PROTOCOL_MAP.get(protocol);
+		if (!specs) throw new Error(`Unknown protocol: "${protocol}"`);		
+		input = input.slice(pos + P_SEP.length);
 		for (let x of specs) {
 			try {
 				switch (x.type) {
 					case 'cid': {
-						rep = CID.from(url.hostname);
+						rep = CID.from(input);
 						data = rep.bytes;
 						break;
 					}
 					case 'coder': {
-						data = x.coder.decode(url.hostname);
+						data = x.coder.decode(input);
 						x.validate(data);
 						rep = x.coder.encode(data);
 						break;
@@ -364,6 +367,7 @@ function update_ens(input) {
 	output_div.innerHTML = '';
 	output_div.append(create_kind_row(spec));
 	if (error) {
+		console.log(error);
 		output_div.append(create_row('Error', create('span', {className: ['tag', 'error'], innerText: `⚠️ ${error.message}`})));
 	} else {
 		let hash_row = create_row('Hash', create('code', {className: 'long', innerText: rep}));
@@ -385,7 +389,7 @@ function update_ens(input) {
 		}
 		output_div.append(contenthash_row);
 			
-		let url = `${spec.protocol}//${rep}`;
+		let url = `${spec.protocol}://${rep}`;
 		let url_row = create_row('URL', create(create_link(spec.url(rep)), {innerText: url}));
 		if (input == url) {
 			url_row.append(create('span', {className: ['tag', 'good'], innerText: 'Same as Input'}));
