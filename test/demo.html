@@ -100,6 +100,7 @@ pre.row {
 .tag.good {
 	color: #060;
 	background-color: #cfc;
+	white-space: pre;
 }
 .tag.version {
 	border: 1px solid #000;
@@ -142,6 +143,13 @@ footer {
 @media only screen and (max-width: 800px) { 
 	body {
 		margin: 1rem;
+	}
+	.row {
+		flex-wrap: wrap;
+	}
+	.row .long {
+		order: 1;
+		flex: 100%;
 	}
 }
 </style>
@@ -367,7 +375,6 @@ function update_ens(input) {
 	output_div.innerHTML = '';
 	output_div.append(create_kind_row(spec));
 	if (error) {
-		console.log(error);
 		output_div.append(create_row('Error', create('span', {className: ['tag', 'error'], innerText: `⚠️ ${error.message}`})));
 	} else {
 		let hash_row = create_row('Hash', create('code', {className: 'long', innerText: rep}));
@@ -390,7 +397,7 @@ function update_ens(input) {
 		output_div.append(contenthash_row);
 			
 		let url = `${spec.protocol}://${rep}`;
-		let url_row = create_row('URL', create(create_link(spec.url(rep)), {innerText: url}));
+		let url_row = create_row('URL', create(create_link(spec.url(rep)), {className: 'long', innerText: url}));
 		if (input == url) {
 			url_row.append(create('span', {className: ['tag', 'good'], innerText: 'Same as Input'}));
 		} else {
