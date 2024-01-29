@@ -1,4 +1,5 @@
 export * as uvarint from './uvarint.js';
+export {CharTable} from './CharTable.js';
 export {RFC4648} from './RFC4648.js';
 export {Prefix0} from './Prefix0.js';
 export {Bech32} from './Bech32.js';

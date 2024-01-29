@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="./favicon.png">
+<title>CID Tool</title>
+<style>
+.hide {
+	display: none !important;
+}
+.long {	
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+a.button {
+	text-decoration: none;
+}
+button {
+	font-size: 100%;
+	cursor: pointer; 
+	white-space: pre;
+}
+body { 
+	margin: 3rem; 
+	background: #eee;
+}
+header {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 4px 8px;
+}
+h1 {
+	margin: 0;
+}
+#github {
+	flex: 1;
+	text-align: right;
+	display: flex;
+	flex-direction: column;
+	order: 2;
+	align-items: end;
+	white-space: pre;
+}
+#examples {
+	margin-top: 8px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+#examples button {
+	padding: 3px 6px;
+}
+#input input {
+	margin-top: 8px;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 8px;
+	font-size: 20px;
+}
+main {
+	margin-top: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+main.error {
+	background: #fcc;
+	padding: 8px;
+}
+.row {
+	display: flex;
+	padding: 8px;
+	background-color: #fff;
+	gap: 8px;
+	align-items: center;
+}
+.row.hash {
+	background-color: #fffff0;
+}
+pre.row {
+	margin: 0;
+	background-color: #ffc;
+}
+.row button {
+	padding: 3px 6px;
+}
+.spec {
+	font: bold 24px monospace;
+}
+.tag {
+	padding: 3px 6px;
+	display: flex;
+	align-items: center;
+	background-color: #ccc;
+	border-radius: 4px;
+}
+.tag.good {
+	color: #060;
+	background-color: #cfc;
+}
+.tag.version {
+	border: 1px solid #000;
+	background-color: unset;
+	font-weight: bold;
+}
+.tag.protocol {
+	background-color: #cff;
+}
+.tag.error {
+	background-color: #fcc;
+}
+.label {
+	font-weight: bold;
+}
+.label:after {
+	content: ':';
+}
+#readme {
+	font-size: 16px;
+	background: #ffc;
+	padding: 16px 16px 16px 36px;
+	display: flex;
+	flex-direction: column;
+	align-items: start;
+	gap: 4px;
+}
+footer {
+	margin: 16px 0;
+	display: flex;
+	gap: 10px;
+	align-items: baseline;
+	justify-content: center;
+	color: #666;
+}
+@media only screen and (max-width: 800px) { 
+	body {
+		margin: 1rem;
+	}
+}
+</style>
+</head>
+<body>
+<header>
+	<h1><a href="https://github.com/multiformats/cid/blob/master/README.md">CID</a> Tool</h1>
+	<div id="github">
+		<a href="https://github.com/adraffy/cid.js">adraffy/cid.js</a>
+	</div>
+</header>
+<div id="examples">
+	<button data-input="0xe3010170122029f2d17be6139079dc48696d1f582a8530eb9805b561eda517e22a892c7e3f1f">IPFS (v1)</button>
+	<button data-input="ipfs://QmZcH4YvBVVRJtdn4RdbaqgspFU8gH6P9vomDpBVpAL3u4/1337">IPFS (v0)</button>
+	<button data-input="0xe5010172002408011220066e20f72cc583d769bc8df5fedff24942b3b8941e827f023d306bdc7aecf5ac">IPNS</button>
+	<button data-input="arweave://yBYkngZXGCQgYU-nUCwo5vns2ALUU0LXXZrCUlUUWkk">Arweave</button>
+	<button data-input="onion://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid">Onion (v3)</button>
+	<button data-input="onion://expyuzz4wqqyqhjn">Onion (v2)</button>
+</div>
+<!-- <select id="mode">
+	<option value="ens">ENS Contenthash</option>
+	<option value="convert">Convert</option>
+</select> -->
+<div id="input">
+	<input placeholder="CID or ENS contenthash">
+</div>
+<main>
+<ul id="readme">
+	<li>Click an <button data-input="ipfs://k2jmtxseqz46solsx2rmxavgbzp6ij1t1kiq1or8a00c2g9bx1for0gv">Example</button> to see how it works.</li>
+	<li>Accepts <span id="protocols"></span> or raw contenthash (as hex).</li>
+</ul>
+</main>
+<footer>
+	<span>Created by <a href="https://x.com/adraffy">raffy.eth</a></span>
+</footer>
+<script type="module">
+import {CID, Multibase, uvarint, Base64URL, Base36} from '../dist/index.min.js';
+
+const input_field = document.querySelector('#input input');
+// const mode_select = document.querySelector('#mode');
+const output_div = document.querySelector('main');
+const readme_dom = [...output_div.childNodes];
+
+const SPECS = [
+	{
+		codec: 0xE3,
+		protocol: 'ipfs:',
+		name: 'IPFS',
+		www: 'https://docs.ipfs.tech/concepts/ipfs-gateway/',
+		type: 'cid',
+		url(rep) { return `https://ipfs.io/ipfs/${rep}`; },
+	},	
+	{
+		codec: 0xE5,
+		protocol: 'ipns:',
+		name: 'IPNS',
+		www: 'https://docs.ipfs.tech/concepts/ipns/',
+		type: 'cid',
+		url(rep) { return `https://${rep}.ipfs2.eth.limo/`; },
+	},
+	{
+		codec: 0xE4,
+		protocol: 'bzz:',
+		name: 'Swarm',
+		www: 'https://docs.ethswarm.org/docs/develop/access-the-swarm/upload-and-download',
+		type: 'cid',
+		url(rep) { return `https://${rep}.bzz.link/`; },
+	},
+	{
+		codec: 0x1BC,
+		protocol: 'onion:',
+		name: 'Onion',
+		deprecated: 'https://support.torproject.org/onionservices/v2-deprecation/',
+		www: 'https://www.tor2web.org/',
+		type: 'coder',
+		coder: Base36,
+		url(rep) { return `https://${rep}.onion.to/`; },
+		validate(v) {
+			if (this.coder.encode(v).length != 16) throw new Error('expected 16 characters');
+		}
+	},
+	{
+		codec: 0x1BD,
+		protocol: 'onion:',
+		name: 'Onion',
+		version: 'v3',
+		www: 'https://www.tor2web.org/',
+		type: 'coder',
+		coder: Base36,
+		url(rep) { return `https://${rep}.onion.to/`; },
+		validate(v) {
+			if (this.coder.encode(v).length != 56) throw new Error('expected 56 characters');
+		}
+	},
+	{
+		codec: 0xB29910,
+		protocol: 'arweave:',
+		name: 'Arweave',
+		www: 'https://docs.arweave.org/developers/arweave-node-server/http-api',
+		type: 'coder',
+		coder: Base64URL,
+		validate(v) {
+			if (v.length != 32) throw new Error('expected 32 bytes');
+ 		},
+		check(rep) { return `https://viewblock.io/arweave/tx/${rep}`; },
+		url(rep) { return `https://arweave.net/${rep}`; }
+	}
+];
+const PROTOCOL_MAP = new Map();
+for (let x of SPECS) {
+	let v = PROTOCOL_MAP.get(x.protocol);
+	if (!v) {
+		v = [];
+		PROTOCOL_MAP.set(x.protocol, v);
+	}
+	v.push(x);
+}
+for (let v of PROTOCOL_MAP.values()) {
+	v = v.filter(x => !x.deprecated);
+	if (v.length != 1) throw new Error('bug: multiple best');
+	v[0].latest = true;
+}
+
+for (let btn of document.querySelectorAll('[data-input]')) {
+	btn.addEventListener('click', () => {
+		//mode_select.value = 'ens';
+		input_field.value = btn.dataset.input;
+		update();
+	});
+}
+
+input_field.addEventListener('input', update);
+update();
+window.addEventListener('hashchange', e => {
+	input_field.value = decodeURIComponent(url.hash.slice(1));
+	update();
+});
+
+function update() {
+	let input = input_field.value.trim();
+	window.history.replaceState(null, null, input ? `#${input}` : ' ');
+	output_div.classList.remove('error');
+	if (!input) {
+		output_div.replaceChildren(...readme_dom);
+		return;
+	}
+	try {
+		update_ens(input);
+		// if (mode_select.value === 'ens') {
+		// 	update_ens(input);
+		// } else {
+		// 	output_div.innerText = mode_select.value;
+		// }
+	} catch (err) {	
+		output_div.classList.add('error');
+		output_div.innerText = `❌ ${err.message}`;
+		console.log(err);
+	}
+}
+
+function update_ens(input) {
+	let spec, rep, data, error;
+	if (is_hex(input)) {
+		let v = bytes_from_hex(input);
+		let [proto, pos] = uvarint.read(v);
+		data = v.subarray(pos);
+		spec = SPECS.find(x => x.codec === proto);
+		if (!spec) throw new Error(`Unknown protocol: ${format_dec_hex(proto)}`);
+		try {
+			switch (spec.type) {
+				case 'cid': {
+					rep = CID.from(data);
+					break;
+				}
+				case 'coder': {
+					spec.validate(data);
+					rep = spec.coder.encode(data);
+					break;
+				}
+				default: throw new Error('bug');
+			}
+		} catch (err) {
+			error = err;
+		}
+	} else if (input.includes('://')) {
+		let url = new URL(input);
+		let specs = PROTOCOL_MAP.get(url.protocol);
+		if (!specs) throw new Error(`Unknown protocol: "${url.protocol}"`);		
+		for (let x of specs) {
+			try {
+				switch (x.type) {
+					case 'cid': {
+						rep = CID.from(url.hostname);
+						data = rep.bytes;
+						break;
+					}
+					case 'coder': {
+						data = x.coder.decode(url.hostname);
+						x.validate(data);
+						rep = x.coder.encode(data);
+						break;
+					}
+					default: throw new Error('bug');
+				}
+				spec = x;
+				error = null;
+				break;
+			} catch (err) {
+				if (x.latest) {
+					spec = x;
+					error = err;
+				}
+			}
+		}
+	}
+	if (!spec) {
+		throw new Error('unknown format');
+	}
+	output_div.innerHTML = '';
+	output_div.append(create_kind_row(spec));
+	if (error) {
+		output_div.append(create_row('Error', create('span', {className: ['tag', 'error'], innerText: `⚠️ ${error.message}`})));
+	} else {
+		let hash_row = create_row('Hash', create('code', {className: 'long', innerText: rep}));
+		hash_row.classList.add('hash');
+		output_div.append(hash_row);
+
+		let contenthash = hex_from_bytes(make_contenthash(spec.codec, data));
+		let contenthash_row = create_row('Contenthash', create('code', {className: 'long', innerText: contenthash}));
+		if (input == contenthash) {
+			contenthash_row.append(create('span', {className: ['tag', 'good'], innerText: 'Same as Input'}));
+		} else {
+			contenthash_row.append(create('button', {
+				innerHTML: '🔁️',
+				click() {
+					input_field.value = contenthash;
+					update();
+				}
+			}));
+		}
+		output_div.append(contenthash_row);
+			
+		let url = `${spec.protocol}//${rep}`;
+		let url_row = create_row('URL', create(create_link(spec.url(rep)), {innerText: url}));
+		if (input == url) {
+			url_row.append(create('span', {className: ['tag', 'good'], innerText: 'Same as Input'}));
+		} else {
+			url_row.append(create('button', {
+				innerHTML: '🔁️',
+				click() {
+					input_field.value = url;
+					update();
+				}
+			}));
+		}
+		output_div.append(url_row);
+
+		let check_url;
+		if (spec.check) check_url = spec.check(rep);
+		if (!check_url && spec.type === 'cid') check_url = `https://cid.ipfs.tech/#${rep}`;
+		if (check_url) {
+			hash_row.append(create(create_link(`https://cid.ipfs.tech/#${rep}`), {className: 'button'}, create('button', {
+				innerText: '✅️ Check'
+			})));
+		}
+
+		if (rep instanceof CID) { 
+			rep.base = undefined;
+			output_div.append(create('pre', {className: ['row', 'long']}, stringify(rep)));
+			if (!rep.version) {
+				output_div.append(create_row('Upgrade', create('button', {
+					innerText: '⚡️ Version 0 → 1',
+					click() {
+						input_field.value = hex_from_bytes(make_contenthash(spec.codec, rep.upgrade().bytes));
+						update();
+					}
+				})));
+			}
+		}
+	}
+}
+
+
+function create_kind_row(spec) {
+	let row = create_row('Kind');
+	row.append(create(create_link(spec.www), {className: 'spec', innerText: spec.name}));	
+	if (spec.version) {
+		row.append(create('span', {className: ['tag', 'version'], innerText: spec.version}))
+	}
+	row.append(create('span', {className: ['tag', 'protocol'], innerText: `Protocol: ${format_dec_hex(spec.codec)}`}));
+	if (spec.deprecated) {
+		let innerText = '⚠️ Deprecated';
+		if (typeof spec.deprecated === 'string') {
+			row.append(create(create_link(spec.deprecated), {className: 'button'}, create('button', {innerText})));
+		} else {
+			row.append(create('span', {className: ['tag', 'error'], innerText}));
+		}
+	}
+	return row;
+}
+function create_row(label, ...a) {
+	return create('div', {className: 'row'}, create('span', {className: 'label', innerText: label}), ...a);
+}
+function create_link(url) {
+	return create('a', {href: new URL(url, window.location), target: '_blank'});
+}
+function make_contenthash(proto, inner) {
+	let v = [];
+	uvarint.write(v, proto);
+	v.push(...inner);
+	return Uint8Array.from(v);
+}
+function stringify(x) {
+	let map = new Map();
+	let json = JSON.stringify(x, (k, v) => {
+		if (v instanceof Uint8Array) {
+			let id = map.get(v);
+			if (!id) {
+				id = `<<<${map.size}>>>`;
+				map.set(v, id);
+			}
+			v = id;
+		}
+		return v;
+	}, '  ');
+	for (let [v, id] of map) {
+		json = json.replaceAll(id, hex_from_bytes(v));
+	}
+	return json;
+}
+function bytes_from_hex(s) {
+	let v = [];
+	for (let i = s.startsWith('0x') ? 2 : 0; i < s.length; i += 2) {
+		v.push(parseInt(s.slice(i, i + 2), 16));
+	}
+	return Uint8Array.from(v);
+}
+function hex_from_bytes(v) {
+	return '0x' + Array.from(v, x => x.toString(16).padStart(2, '0')).join('');
+}
+function format_dec_hex(id) {
+	return id < 10 ? id : `${id} (0x${id.toString(16).toUpperCase()})`;
+}
+function is_hex(s) {
+	return typeof s === 'string' && !(s.length & 1) && /^(0x)?[0-9a-f]+$/i.test(s);
+}
+function create(el, args, ...a) {
+	if (typeof el === 'string') el = document.createElement(el);
+	if (args) {
+		for (let [k, v] of Object.entries(args)) {
+			if (!v) continue;
+			if (v instanceof Function) {
+				el.addEventListener(k, v);
+			} else if (k === 'dataset') {
+				Object.assign(el.dataset, v);
+			} else if (k === 'className') {
+				for (let x of [v].flat(Infinity)) {
+					if (typeof x === 'string') {
+						el.classList.add(x);
+					} else if (x) {
+						Object.entries(x).forEach(([k, v]) => el.classList.toggle(k, !!v));
+					}
+				}
+			} else {
+				el[k] = v;
+			}
+		}
+	}
+	el.append(...a);
+	return el;	
+}
+</script>
+</body>
+</html>

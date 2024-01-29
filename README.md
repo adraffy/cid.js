@@ -4,6 +4,8 @@
 * [`7KB`](./dist/index.min.js) **Default** — full library
 * [`1KB`](./dist/uvarint.min.js) — just [uvarint.js](./src/uvarint.js)
 
+[**Demo**](https://adraffy.github.io/cid.js/test/demo.html) ⭐
+
 ```js
 import {CID} from '@adraffy/cid'; // or require()
 // npm i @adraffy/cid
@@ -87,7 +89,7 @@ p = uvarint.write(v, 1337n, p);    // BigInt
 let u;
 [u, p] = uvarint.readHex(v, 0);    // "0x45" => 69
 [u, p] = uvarint.readBigInt(v, p); //  1056n => 0x420
-[u, p] = uvarint.read(v, p);       //   1337
+[u, p] = uvarint.read(v, p);       //  1337
 let [u0, u1, u2] = uvarint.read(v, 0, 3); // at position 0, read 3x
 // [69, 1056, 1337]
 ```

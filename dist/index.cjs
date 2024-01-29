@@ -521,6 +521,7 @@ exports.Base64URL = Base64URL;
 exports.Base8 = Base8;
 exports.Bech32 = Bech32;
 exports.CID = CID;
+exports.CharTable = CharTable;
 exports.Multibase = Multibase;
 exports.Multibased = Multibased;
 exports.Multihash = Multihash;

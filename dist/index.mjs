@@ -505,4 +505,4 @@ class CID {
 	}
 }
 
-export { Base10, Base16, Base2, Base32, Base32Hex, Base32Z, Base36, Base58BTC, Base58Flickr, Base64, Base64URL, Base8, Bech32, CID, Multibase, Multibased, Multihash, Prefix0, RFC4648, convert, uvarint };
+export { Base10, Base16, Base2, Base32, Base32Hex, Base32Z, Base36, Base58BTC, Base58Flickr, Base64, Base64URL, Base8, Bech32, CID, CharTable, Multibase, Multibased, Multihash, Prefix0, RFC4648, convert, uvarint };
