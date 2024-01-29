@@ -20,6 +20,7 @@ button {
 	font-size: 100%;
 	cursor: pointer; 
 	white-space: pre;
+	padding: 4px 8px;
 }
 body { 
 	margin: 3rem; 
@@ -84,7 +85,7 @@ pre.row {
 	background-color: #ffc;
 }
 .row button {
-	padding: 3px 6px;
+	font-size: 15px;
 }
 .spec {
 	font: bold 24px monospace;
@@ -126,6 +127,10 @@ pre.row {
 	align-items: start;
 	gap: 4px;
 }
+#readme code {
+	background-color: #cff;
+	padding: 1px;
+}
 footer {
 	margin: 16px 0;
 	display: flex;
@@ -149,7 +154,7 @@ footer {
 	</div>
 </header>
 <div id="examples">
-	<button data-input="0xe3010170122029f2d17be6139079dc48696d1f582a8530eb9805b561eda517e22a892c7e3f1f">IPFS (v1)</button>
+	<button data-input="0xe301017012203ae00318ae91bb0c41808a2e755d10137e5da5f441a8dc0c70ed791b4cb933f0">IPFS (v1)</button>
 	<button data-input="ipfs://QmZcH4YvBVVRJtdn4RdbaqgspFU8gH6P9vomDpBVpAL3u4/1337">IPFS (v0)</button>
 	<button data-input="0xe5010172002408011220066e20f72cc583d769bc8df5fedff24942b3b8941e827f023d306bdc7aecf5ac">IPNS</button>
 	<button data-input="arweave://yBYkngZXGCQgYU-nUCwo5vns2ALUU0LXXZrCUlUUWkk">Arweave</button>
@@ -164,9 +169,9 @@ footer {
 	<input placeholder="CID or ENS contenthash">
 </div>
 <main>
-<ul id="readme">
+<ul class="row" id="readme">
 	<li>Click an <button data-input="ipfs://k2jmtxseqz46solsx2rmxavgbzp6ij1t1kiq1or8a00c2g9bx1for0gv">Example</button> to see how it works.</li>
-	<li>Accepts <span id="protocols"></span> or raw contenthash (as hex).</li>
+	<li>Accepts <code id="protocols"></code> or hex contenthash.</li>
 </ul>
 </main>
 <footer>
@@ -268,6 +273,7 @@ for (let btn of document.querySelectorAll('[data-input]')) {
 	});
 }
 
+document.querySelector('#protocols').innerText = [...PROTOCOL_MAP.keys()].map(x => x.slice(0, -1)).join('|');
 input_field.addEventListener('input', update);
 update();
 window.addEventListener('hashchange', e => {
