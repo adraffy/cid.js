@@ -167,7 +167,7 @@ footer {
 	<button data-input="0xe301017012203ae00318ae91bb0c41808a2e755d10137e5da5f441a8dc0c70ed791b4cb933f0">IPFS (v1)</button>
 	<button data-input="ipfs://QmZcH4YvBVVRJtdn4RdbaqgspFU8gH6P9vomDpBVpAL3u4">IPFS (v0)</button>
 	<button data-input="0xe5010172002408011220066e20f72cc583d769bc8df5fedff24942b3b8941e827f023d306bdc7aecf5ac">IPNS</button>
-	<button data-input="arweave://yBYkngZXGCQgYU-nUCwo5vns2ALUU0LXXZrCUlUUWkk">Arweave</button>
+	<button data-input="ar://yBYkngZXGCQgYU-nUCwo5vns2ALUU0LXXZrCUlUUWkk">Arweave</button>
 	<button data-input="onion://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid">Onion (v3)</button>
 	<button data-input="onion://expyuzz4wqqyqhjn">Onion (v2)</button>
 </div>
@@ -198,7 +198,7 @@ const readme_dom = [...output_div.childNodes];
 const SPECS = [
 	{
 		codec: 0xE3,
-		protocol: 'ipfs',
+		prefix: 'ipfs',
 		name: 'IPFS',
 		www: 'https://docs.ipfs.tech/concepts/ipfs-gateway/',
 		type: 'cid',
@@ -206,7 +206,7 @@ const SPECS = [
 	},	
 	{
 		codec: 0xE5,
-		protocol: 'ipns',
+		prefix: 'ipns',
 		name: 'IPNS',
 		www: 'https://docs.ipfs.tech/concepts/ipns/',
 		type: 'cid',
@@ -214,7 +214,7 @@ const SPECS = [
 	},
 	{
 		codec: 0xE4,
-		protocol: 'bzz',
+		prefix: 'bzz',
 		name: 'Swarm',
 		www: 'https://docs.ethswarm.org/docs/develop/access-the-swarm/upload-and-download',
 		type: 'cid',
@@ -222,7 +222,7 @@ const SPECS = [
 	},
 	{
 		codec: 0x1BC,
-		protocol: 'onion',
+		prefix: 'onion',
 		name: 'Onion',
 		deprecated: 'https://support.torproject.org/onionservices/v2-deprecation/',
 		www: 'https://www.tor2web.org/',
@@ -235,7 +235,7 @@ const SPECS = [
 	},
 	{
 		codec: 0x1BD,
-		protocol: 'onion',
+		prefix: 'onion',
 		name: 'Onion',
 		version: 'v3',
 		www: 'https://www.tor2web.org/',
@@ -248,7 +248,7 @@ const SPECS = [
 	},
 	{
 		codec: 0xB29910,
-		protocol: 'arweave',
+		prefix: 'ar',
 		name: 'Arweave',
 		www: 'https://docs.arweave.org/developers/arweave-node-server/http-api',
 		type: 'coder',
@@ -260,16 +260,16 @@ const SPECS = [
 		url(rep) { return `https://arweave.net/${rep}`; }
 	}
 ];
-const PROTOCOL_MAP = new Map();
+const PREFIX_MAP = new Map();
 for (let x of SPECS) {
-	let v = PROTOCOL_MAP.get(x.protocol);
+	let v = PREFIX_MAP.get(x.prefix);
 	if (!v) {
 		v = [];
-		PROTOCOL_MAP.set(x.protocol, v);
+		PREFIX_MAP.set(x.prefix, v);
 	}
 	v.push(x);
 }
-for (let v of PROTOCOL_MAP.values()) {
+for (let v of PREFIX_MAP.values()) {
 	v = v.filter(x => !x.deprecated);
 	if (v.length != 1) throw new Error('bug: multiple best');
 	v[0].latest = true;
@@ -283,7 +283,7 @@ for (let btn of document.querySelectorAll('[data-input]')) {
 	});
 }
 
-document.querySelector('#protocols').innerText = [...PROTOCOL_MAP.keys()].join('|');
+document.querySelector('#protocols').innerText = [...PREFIX_MAP.keys()].join('|');
 input_field.addEventListener('input', update);
 update();
 window.addEventListener('hashchange', e => {
@@ -341,7 +341,7 @@ function update_ens(input) {
 	} else if (input.includes(P_SEP)) {
 		let pos = input.indexOf(P_SEP);
 		let protocol = input.slice(0, pos);
-		let specs = PROTOCOL_MAP.get(protocol);
+		let specs = PREFIX_MAP.get(protocol);
 		if (!specs) throw new Error(`Unknown protocol: "${protocol}"`);		
 		let rest = input.slice(pos + P_SEP.length);
 		for (let x of specs) {
@@ -398,7 +398,7 @@ function update_ens(input) {
 		}
 		output_div.append(contenthash_row);
 			
-		let url = `${spec.protocol}://${rep}`;
+		let url = `${spec.prefix}://${rep}`;
 		let url_row = create_row('URL', create(create_link(spec.url(rep)), {className: 'long', innerText: url}));
 		if (input == url) {
 			url_row.append(create('span', {className: ['tag', 'good'], innerText: 'Same as Input'}));

@@ -44,9 +44,9 @@ export class Multihash {
 
 export const uvarint: {
 	write(v: BytesLike, u: BytesLike|string|number, pos?: number): number;
-	read(v: BytesLike, pos?: number, n?: number): number[];
-	readHex(v: BytesLike, pos?: number, n?: number): number[];
-	readBigInt(v: BytesLike, pos?: number, n?: number): number[];
+	      read(v: BytesLike, pos?: number, n?: number): [...number[], pos: number];
+	   readHex(v: BytesLike, pos?: number, n?: number): [...string[], pos: number];
+	readBigInt(v: BytesLike, pos?: number, n?: number): [...BigInt[], pos: number];
 }
 
 export class RFC4648 implements Coder {
