@@ -168,8 +168,8 @@ footer {
 	<button data-input="ipfs://QmZcH4YvBVVRJtdn4RdbaqgspFU8gH6P9vomDpBVpAL3u4">IPFS (v0)</button>
 	<button data-input="0xe5010172002408011220066e20f72cc583d769bc8df5fedff24942b3b8941e827f023d306bdc7aecf5ac">IPNS</button>
 	<button data-input="ar://yBYkngZXGCQgYU-nUCwo5vns2ALUU0LXXZrCUlUUWkk">Arweave</button>
-	<button data-input="onion://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid">Onion (v3)</button>
-	<button data-input="onion://expyuzz4wqqyqhjn">Onion (v2)</button>
+	<button data-input="http://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion">Onion (v3)</button>
+	<button data-input="0xbc0325df8a673cb421881d2d">Onion (v2)</button>
 </div>
 <!-- <select id="mode">
 	<option value="ens">ENS Contenthash</option>
@@ -188,17 +188,27 @@ footer {
 	<span>Created by <a href="https://x.com/adraffy">raffy.eth</a></span>
 </footer>
 <script type="module">
-import {CID, Multibase, uvarint, Base64URL, Base36} from '../dist/index.min.js';
+import {CID, Multibase, uvarint, Base64URL, Base32} from '../dist/index.min.js';
 
 const input_field = document.querySelector('#input input');
 // const mode_select = document.querySelector('#mode');
 const output_div = document.querySelector('main');
 const readme_dom = [...output_div.childNodes];
 
+const ONION = {
+	regex: /^(?:http:\/\/)?(.*)\.onion/,
+	name: 'Onion',
+	www: 'https://www.tor2web.org/',
+	type: 'coder',
+	coder: Base32,
+	format(rep) { return `http://${rep}.onion`; },
+	url(rep) { return `https://${rep}.onion.to/`; },
+};
+
 const SPECS = [
 	{
 		codec: 0xE3,
-		prefix: 'ipfs',
+		scheme: 'ipfs',
 		name: 'IPFS',
 		www: 'https://docs.ipfs.tech/concepts/ipfs-gateway/',
 		type: 'cid',
@@ -206,7 +216,7 @@ const SPECS = [
 	},	
 	{
 		codec: 0xE5,
-		prefix: 'ipns',
+		scheme: 'ipns',
 		name: 'IPNS',
 		www: 'https://docs.ipfs.tech/concepts/ipns/',
 		type: 'cid',
@@ -214,41 +224,42 @@ const SPECS = [
 	},
 	{
 		codec: 0xE4,
-		prefix: 'bzz',
+		scheme: 'bzz',
 		name: 'Swarm',
 		www: 'https://docs.ethswarm.org/docs/develop/access-the-swarm/upload-and-download',
 		type: 'cid',
 		url(rep) { return `https://${rep}.bzz.link/`; },
 	},
 	{
-		codec: 0x1BC,
-		prefix: 'onion',
-		name: 'Onion',
+		...ONION,
+		codec: 0x1BC,	
 		deprecated: 'https://support.torproject.org/onionservices/v2-deprecation/',
-		www: 'https://www.tor2web.org/',
-		type: 'coder',
-		coder: Base36,
-		url(rep) { return `https://${rep}.onion.to/`; },
 		validate(v) {
 			if (this.coder.encode(v).length != 16) throw new Error('expected 16 characters');
+		},
+		json(v) { 
+			return {hash: v}; 
 		}
 	},
 	{
+		...ONION,
 		codec: 0x1BD,
-		prefix: 'onion',
-		name: 'Onion',
 		version: 'v3',
-		www: 'https://www.tor2web.org/',
-		type: 'coder',
-		coder: Base36,
-		url(rep) { return `https://${rep}.onion.to/`; },
 		validate(v) {
 			if (this.coder.encode(v).length != 56) throw new Error('expected 56 characters');
+		},
+		json(v) {
+			// TODO: validate checksum sha3(".onion checksum" + pubkey + version).slice(0, 2)
+			return {
+				pubkey: v.subarray(0, 32),
+				checksum: v.subarray(32, 34),
+				version: v[34]
+			};
 		}
 	},
 	{
 		codec: 0xB29910,
-		prefix: 'ar',
+		scheme: 'ar',
 		name: 'Arweave',
 		www: 'https://docs.arweave.org/developers/arweave-node-server/http-api',
 		type: 'coder',
@@ -260,20 +271,6 @@ const SPECS = [
 		url(rep) { return `https://arweave.net/${rep}`; }
 	}
 ];
-const PREFIX_MAP = new Map();
-for (let x of SPECS) {
-	let v = PREFIX_MAP.get(x.prefix);
-	if (!v) {
-		v = [];
-		PREFIX_MAP.set(x.prefix, v);
-	}
-	v.push(x);
-}
-for (let v of PREFIX_MAP.values()) {
-	v = v.filter(x => !x.deprecated);
-	if (v.length != 1) throw new Error('bug: multiple best');
-	v[0].latest = true;
-}
 
 for (let btn of document.querySelectorAll('[data-input]')) {
 	btn.addEventListener('click', () => {
@@ -283,11 +280,12 @@ for (let btn of document.querySelectorAll('[data-input]')) {
 	});
 }
 
-document.querySelector('#protocols').innerText = [...PREFIX_MAP.keys()].join('|');
+document.querySelector('#protocols').innerText = [...new Set(SPECS.map(x => x.name))].join('|');
+input_field.value = decodeURIComponent(window.location.hash.slice(1));
 input_field.addEventListener('input', update);
 update();
 window.addEventListener('hashchange', e => {
-	input_field.value = decodeURIComponent(url.hash.slice(1));
+	input_field.value = decodeURIComponent(new URL(e.newURL).hash.slice(1));
 	update();
 });
 
@@ -314,7 +312,6 @@ function update() {
 }
 
 function update_ens(input) {
-	const P_SEP = '://';
 	let spec, rep, data, error;
 	if (is_hex(input)) {
 		let v = bytes_from_hex(input);
@@ -338,13 +335,20 @@ function update_ens(input) {
 		} catch (err) {
 			error = err;
 		}
-	} else if (input.includes(P_SEP)) {
-		let pos = input.indexOf(P_SEP);
-		let protocol = input.slice(0, pos);
-		let specs = PREFIX_MAP.get(protocol);
-		if (!specs) throw new Error(`Unknown protocol: "${protocol}"`);		
-		let rest = input.slice(pos + P_SEP.length);
-		for (let x of specs) {
+	} else {
+		for (let x of SPECS) {
+			let rest;
+			if (x.scheme) {
+				if (input.startsWith(x.scheme + '://')) {
+					rest = input.slice(x.scheme.length + 3);
+				}
+			} else if (x.regex) {
+				let match = input.match(x.regex);
+				if (match) {
+					rest = match[1];
+				}
+			}
+			if (!rest) continue;
 			try {
 				switch (x.type) {
 					case 'cid': {
@@ -364,7 +368,7 @@ function update_ens(input) {
 				error = null;
 				break;
 			} catch (err) {
-				if (x.latest) {
+				if (!x.deprecated) {
 					spec = x;
 					error = err;
 				}
@@ -398,15 +402,20 @@ function update_ens(input) {
 		}
 		output_div.append(contenthash_row);
 			
-		let url = `${spec.prefix}://${rep}`;
-		let url_row = create_row('URL', create(create_link(spec.url(rep)), {className: 'long', innerText: url}));
-		if (input == url) {
+		let form;
+		if (spec.scheme) {
+			form = `${spec.scheme}://${rep}`;
+		} else {
+			form = spec.format(rep);
+		}
+		let url_row = create_row('URL', create(create_link(spec.url(rep)), {className: 'long', innerText: form}));
+		if (input == form) {
 			url_row.append(create('span', {className: ['tag', 'good'], innerText: 'Same as Input'}));
 		} else {
 			url_row.append(create('button', {
 				innerHTML: '🔁️',
 				click() {
-					input_field.value = url;
+					input_field.value = form;
 					update();
 				}
 			}));
@@ -417,24 +426,32 @@ function update_ens(input) {
 		if (spec.check) check_url = spec.check(rep);
 		if (!check_url && spec.type === 'cid') check_url = `https://cid.ipfs.tech/#${rep}`;
 		if (check_url) {
-			hash_row.append(create(create_link(`https://cid.ipfs.tech/#${rep}`), {className: 'button'}, create('button', {
-				innerText: '✅️ Check'
+			hash_row.append(create(create_link(check_url), {className: 'button'}, create('button', {
+				innerText: '🔍️ Inspect'
 			})));
 		}
 
+		let json;
 		if (rep instanceof CID) { 
-			rep.base = undefined;
-			output_div.append(create('pre', {className: ['row', 'long']}, stringify(rep)));
-			if (!rep.version) {
-				output_div.append(create_row('Upgrade', create('button', {
-					innerText: '⚡️ Version 0 → 1',
-					click() {
-						input_field.value = hex_from_bytes(make_contenthash(spec.codec, rep.upgrade().bytes));
-						update();
-					}
-				})));
-			}
+			json = {...rep};
+			delete json.base;
+		} else if (spec.json) {
+			json = spec.json(data);
 		}
+		if (json) {
+			output_div.append(create('pre', {className: ['row', 'long']}, stringify(json)));
+		}
+
+		if (rep instanceof CID && !rep.version) {
+			output_div.append(create_row('Upgrade', create('button', {
+				innerText: '⚡️ Version 0 → 1',
+				click() {
+					input_field.value = hex_from_bytes(make_contenthash(spec.codec, rep.upgrade().bytes));
+					update();
+				}
+			})));
+		}
+
 	}
 }
 
